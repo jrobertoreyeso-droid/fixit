@@ -1,0 +1,97 @@
+.selector-urgencia {
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.selector-urgencia h3 {
+  margin: 0 0 12px;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.urgencia-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.urgencia-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 10px;
+  background: #FFFFFF;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.urgencia-btn:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(35, 47, 114, 0.08);
+}
+
+.urgencia-btn.selected {
+  border-color: var(--primary);
+  background: #E0E7FF;
+  box-shadow: 0 0 0 3px rgba(35, 47, 114, 0.1);
+}
+
+.urgencia-icon {
+  font-size: 22px;
+}
+
+.urgencia-label {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.urgencia-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.urgencia-recargo {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.urgencia-total {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 12px;
+  margin-top: 16px;
+  padding: 14px;
+  background: #FFFFFF;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.urgencia-total .total-label {
+  color: var(--text-primary);
+  font-weight: 700;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.urgencia-total .total-valor {
+  color: var(--primary);
+  font-weight: 800;
+  font-size: 18px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  text-align: right;
+}
