@@ -4,7 +4,8 @@ import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
-  updateProfile
+  updateProfile,
+  signOut,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { User, Wrench } from 'lucide-react';
@@ -32,9 +33,11 @@ export default function Login({ setUserType }) {
     setError('');
   };
 
+  // Guardar perfil si es nuevo usuario
   const guardarPerfilUsuario = async (user, tipoUsuario, datosExtra = {}) => {
     const userRef = doc(db, 'usuarios', user.uid);
     const existe = await getDoc(userRef);
+
     if (!existe.exists()) {
       await setDoc(userRef, {
         uid: user.uid,
@@ -45,8 +48,9 @@ export default function Login({ setUserType }) {
         verificado: false,
         createdAt: serverTimestamp(),
       });
+      return { tipo: tipoUsuario };
     }
-    return existe.data() || { tipo: tipoUsuario };
+    return existe.data();
   };
 
   const handleSubmit = async (e) => {
@@ -56,6 +60,7 @@ export default function Login({ setUserType }) {
 
     try {
       if (modo === 'registro') {
+        // ===== REGISTRO =====
         if (!email || !password || !nombre || !telefono) {
           throw new Error('Completa todos los campos');
         }
@@ -69,10 +74,30 @@ export default function Login({ setUserType }) {
 
         setUserType(tipo);
       } else {
+        // ===== LOGIN =====
         const { user } = await signInWithEmailAndPassword(auth, email, password);
         const userRef = doc(db, 'usuarios', user.uid);
         const userDoc = await getDoc(userRef);
-        const tipoGuardado = userDoc.exists() ? userDoc.data().tipo : TIPO_CLIENTE;
+
+        if (!userDoc.exists()) {
+          // Usuario sin perfil (raro) → asignar el tipo que eligió
+          await guardarPerfilUsuario(user, tipo);
+          setUserType(tipo);
+          return;
+        }
+
+        const tipoGuardado = userDoc.data().tipo;
+
+        // ⭐ VALIDACIÓN: el tipo del login debe coincidir con el del usuario
+        if (tipoGuardado !== tipo) {
+          await signOut(auth);
+          throw new Error(
+            tipoGuardado === TIPO_CLIENTE
+              ? 'Este correo está registrado como Cliente. Cambia a "Cliente" para iniciar sesión.'
+              : 'Este correo está registrado como Técnico. Cambia a "Técnico" para iniciar sesión.'
+          );
+        }
+
         setUserType(tipoGuardado);
       }
     } catch (err) {
@@ -97,14 +122,38 @@ export default function Login({ setUserType }) {
     try {
       const provider = new GoogleAuthProvider();
       const { user } = await signInWithPopup(auth, provider);
-      const perfil = await guardarPerfilUsuario(user, tipo, {
-        nombre: user.displayName,
-        telefono: '',
-      });
-      setUserType(perfil.tipo || tipo);
+      const userRef = doc(db, 'usuarios', user.uid);
+      const userDoc = await getDoc(userRef);
+
+      if (userDoc.exists()) {
+        const tipoGuardado = userDoc.data().tipo;
+
+        // ⭐ VALIDACIÓN: el tipo debe coincidir
+        if (tipoGuardado !== tipo) {
+          await signOut(auth);
+          throw new Error(
+            tipoGuardado === TIPO_CLIENTE
+              ? 'Este correo está registrado como Cliente. Cambia a "Cliente" para iniciar.'
+              : 'Este correo está registrado como Técnico. Cambia a "Técnico" para iniciar.'
+          );
+        }
+
+        setUserType(tipoGuardado);
+      } else {
+        // Usuario nuevo con Google
+        await guardarPerfilUsuario(user, tipo, {
+          nombre: user.displayName,
+          telefono: '',
+        });
+        setUserType(tipo);
+      }
     } catch (err) {
       console.error(err);
-      setError('Error al iniciar con Google');
+      if (err.message && err.message.includes('registrado como')) {
+        setError(err.message);
+      } else {
+        setError('Error al iniciar con Google');
+      }
     } finally {
       setCargando(false);
     }

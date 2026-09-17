@@ -1005,3 +1005,31 @@ button {
 button:active:not(:disabled) {
   transform: scale(0.98);
 }
+/* Rol badge en el header */
+.rol-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.rol-cliente {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.rol-tecnico {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+@media (max-width: 640px) {
+  .rol-badge {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}

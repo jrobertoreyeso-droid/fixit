@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import { auth, db, calcularDesglose } from './firebase';
-import { collection, addDoc, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import {
   Zap,
   Wrench,
@@ -68,9 +69,10 @@ function getCategoriaInfo(categoryValue) {
 
 function App() {
   const [user, setUser] = useState(null);
+  const [userType, setUserType] = useState(null); // ⭐ Se determina automáticamente
+  const [perfilUsuario, setPerfilUsuario] = useState(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('home');
-  const [userType, setUserType] = useState('cliente');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [description, setDescription] = useState('');
   const [budget, setBudget] = useState('');
@@ -87,17 +89,39 @@ function App() {
   const [tabActiva, setTabActiva] = useState('pendientes');
   const [ubicacionTecnico, setUbicacionTecnico] = useState(null);
 
+  // Cargar usuario + perfil con su tipo
   useEffect(() => {
-    onAuthStateChanged(auth, (currentUser) => {
+    const unsub = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        try {
+          const userRef = doc(db, 'usuarios', currentUser.uid);
+          const userDoc = await getDoc(userRef);
+          if (userDoc.exists()) {
+            const perfil = userDoc.data();
+            setPerfilUsuario(perfil);
+            setUserType(perfil.tipo);
+          } else {
+            // Sin perfil → asumir cliente por seguridad
+            setUserType('cliente');
+          }
+        } catch (err) {
+          console.error('Error cargando perfil:', err);
+        }
+      } else {
+        setPerfilUsuario(null);
+        setUserType(null);
+      }
       setLoading(false);
     });
+    return () => unsub();
   }, []);
 
+  // Cargar datos según el tipo de usuario
   useEffect(() => {
-    if (user) {
+    if (user && userType) {
       if (userType === 'cliente') loadMyRequests();
-      if (userType === 'proveedor') loadAvailableRequests();
+      if (userType === 'tecnico') loadAvailableRequests();
       loadChats();
     }
   }, [user, userType]);
@@ -151,9 +175,7 @@ function App() {
 
       const map = new Map();
       [...activas, ...mias].forEach(sol => map.set(sol.id, sol));
-      const todas = Array.from(map.values());
-
-      setAllRequests(todas);
+      setAllRequests(Array.from(map.values()));
     } catch (error) {
       console.error('Error:', error);
     }
@@ -187,6 +209,7 @@ function App() {
       await addDoc(collection(db, 'requests'), {
         userId: user.uid,
         userEmail: user.email,
+        userName: perfilUsuario?.nombre || user.displayName || '',
         category: selectedCategory,
         description,
         budget: parseFloat(budget),
@@ -223,13 +246,14 @@ function App() {
       return;
     }
     try {
-      const requestRef = doc(db, 'requests', selectedRequest.id);
+      const { doc: docFirestore } = await import('firebase/firestore');
+      const requestRef = docFirestore(db, 'requests', selectedRequest.id);
       const nuevaOferta = {
         id: `msg-${Date.now()}`,
         by: 'tecnico',
         byUid: user.uid,
         byEmail: user.email,
-        byName: user.displayName || user.email?.split('@')[0],
+        byName: perfilUsuario?.nombre || user.displayName || user.email?.split('@')[0],
         type: 'oferta_inicial',
         monto: parseFloat(offerPrice),
         status: 'pendiente',
@@ -244,7 +268,7 @@ function App() {
         tecnicoSeleccionado: {
           uid: user.uid,
           email: user.email,
-          nombre: user.displayName || user.email?.split('@')[0],
+          nombre: perfilUsuario?.nombre || user.displayName || user.email?.split('@')[0],
         },
       });
 
@@ -274,13 +298,13 @@ function App() {
   const handleSendMessage = async () => {
     if (!chatMessage.trim() || !selectedChat) return;
     try {
-      const chatRef = doc(db, 'chats', selectedChat.id);
+      const requestRef = doc(db, 'chats', selectedChat.id);
       const newMessage = {
         sender: user.email,
         text: chatMessage,
         timestamp: new Date()
       };
-      await updateDoc(chatRef, {
+      await updateDoc(requestRef, {
         messages: [...(selectedChat.messages || []), newMessage]
       });
       setChatMessage('');
@@ -309,6 +333,7 @@ function App() {
   const handleLogout = async () => {
     await signOut(auth);
     setView('home');
+    setUserType(null);
   };
 
   const clasificarSolicitudes = (lista) => {
@@ -355,15 +380,18 @@ function App() {
           <span>FixIt</span>
         </div>
         <div className="user-section">
-          <div className="user-type-toggle">
-            <button className={userType === 'cliente' ? 'active' : ''} onClick={() => { setUserType('cliente'); setView('home'); }}>
-              <User size={14} strokeWidth={2.5} />
-              <span>Cliente</span>
-            </button>
-            <button className={userType === 'proveedor' ? 'active' : ''} onClick={() => { setUserType('proveedor'); setView('home'); }}>
-              <HardHat size={14} strokeWidth={2.5} />
-              <span>Técnico</span>
-            </button>
+          <div className={`rol-badge rol-${userType}`}>
+            {userType === 'cliente' ? (
+              <>
+                <User size={14} strokeWidth={2.5} />
+                <span>Cliente</span>
+              </>
+            ) : (
+              <>
+                <HardHat size={14} strokeWidth={2.5} />
+                <span>Técnico</span>
+              </>
+            )}
           </div>
           <span className="user-email">{user.email}</span>
           <button onClick={handleLogout} className="logout-btn">Salir</button>
@@ -563,7 +591,7 @@ function App() {
       )}
 
       {/* VISTA TÉCNICO */}
-      {userType === 'proveedor' && (
+      {userType === 'tecnico' && (
         <div className="provider-view">
           <BarraUbicacionTecnico onUbicacionChange={setUbicacionTecnico} />
 
@@ -675,7 +703,7 @@ function App() {
         </div>
       )}
 
-      {userType === 'proveedor' && view === 'chat-provider' && selectedChat && (
+      {userType === 'tecnico' && view === 'chat-provider' && selectedChat && (
         <div className="chat-view">
           <button onClick={() => setView('home')} className="back-btn">Volver</button>
           <div className="chat-container">
