@@ -1,5 +1,14 @@
 import { useState } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
+import {
+  MessageSquare,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  User,
+  HardHat,
+  TrendingUp,
+} from 'lucide-react';
 import { db, calcularDesglose } from '../firebase';
 import './NegociacionPanel.css';
 
@@ -121,37 +130,63 @@ export default function NegociacionPanel({
 
   return (
     <div className="negociacion-panel">
-      <h4 className="negociacion-titulo">💬 Historial de negociación</h4>
+      <h4 className="negociacion-titulo">
+        <MessageSquare size={16} strokeWidth={2.5} />
+        <span>Historial de negociación</span>
+      </h4>
 
       <div className="negociacion-historial">
-        {negotiation.map((msg, idx) => (
-          <div
-            key={msg.id || idx}
-            className={`negociacion-msg negociacion-msg-${msg.by} ${msg.status}`}
-          >
-            <div className="negociacion-msg-header">
-              <strong>
-                {msg.by === 'tecnico' ? '🔧' : '👤'} {msg.byName || getNombreCorto(msg.byEmail)}
-              </strong>
-              <span className="negociacion-msg-hora">
-                {msg.timestamp?.toDate
-                  ? msg.timestamp.toDate().toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })
-                  : new Date(msg.timestamp).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })}
-              </span>
+        {negotiation.map((msg, idx) => {
+          const esCliente = msg.by === 'cliente';
+          const Icono = esCliente ? User : HardHat;
+          return (
+            <div
+              key={msg.id || idx}
+              className={`negociacion-msg negociacion-msg-${msg.by} ${msg.status}`}
+            >
+              <div className="negociacion-msg-header">
+                <strong>
+                  <Icono size={13} strokeWidth={2.5} />
+                  <span>{msg.byName || getNombreCorto(msg.byEmail)}</span>
+                </strong>
+                <span className="negociacion-msg-hora">
+                  {msg.timestamp?.toDate
+                    ? msg.timestamp.toDate().toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })
+                    : new Date(msg.timestamp).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+              <div className="negociacion-msg-monto">Q{msg.monto}</div>
+              <div className="negociacion-msg-status">
+                {msg.status === 'pendiente' && (
+                  <>
+                    <Clock size={11} strokeWidth={2.5} />
+                    <span>Pendiente</span>
+                  </>
+                )}
+                {msg.status === 'aceptada' && (
+                  <>
+                    <CheckCircle2 size={11} strokeWidth={2.5} />
+                    <span>Aceptada</span>
+                  </>
+                )}
+                {msg.status === 'rechazada' && (
+                  <>
+                    <XCircle size={11} strokeWidth={2.5} />
+                    <span>Rechazada</span>
+                  </>
+                )}
+              </div>
             </div>
-            <div className="negociacion-msg-monto">Q{msg.monto}</div>
-            <div className="negociacion-msg-status">
-              {msg.status === 'pendiente' && '⏳ Pendiente'}
-              {msg.status === 'aceptada' && '✅ Aceptada'}
-              {msg.status === 'rechazada' && '❌ Rechazada'}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {request.status === 'precio_acordado' && (
         <div className="negociacion-acordado">
-          <p>🎉 <strong>Precio acordado: Q{request.precioFinal}</strong></p>
+          <p>
+            <CheckCircle2 size={18} strokeWidth={2.5} />
+            <strong>Precio acordado: Q{request.precioFinal}</strong>
+          </p>
           {request.desglose && (
             <div className="negociacion-desglose">
               <div><span>Cliente paga:</span><span>Q{request.desglose.totalCliente.toFixed(2)}</span></div>
@@ -164,7 +199,7 @@ export default function NegociacionPanel({
 
       {esMiTurno && request.status !== 'precio_acordado' && (
         <div className="negociacion-acciones">
-          <p className="negociacion-turno">👉 Es tu turno de responder</p>
+          <p className="negociacion-turno">Es tu turno de responder</p>
 
           <div className="negociacion-btn-row">
             <button
@@ -172,14 +207,16 @@ export default function NegociacionPanel({
               onClick={() => enviarContraoferta(true)}
               disabled={procesando}
             >
-              ✅ Aceptar Q{ultimaOferta.monto}
+              <CheckCircle2 size={16} strokeWidth={2.5} />
+              <span>Aceptar Q{ultimaOferta.monto}</span>
             </button>
             <button
               className="negociacion-btn-rechazar"
               onClick={rechazar}
               disabled={procesando}
             >
-              ❌ Rechazar
+              <XCircle size={16} strokeWidth={2.5} />
+              <span>Rechazar</span>
             </button>
           </div>
 
@@ -196,7 +233,8 @@ export default function NegociacionPanel({
               onClick={() => enviarContraoferta(false)}
               disabled={procesando || !monto}
             >
-              💬 Enviar contraoferta
+              <TrendingUp size={14} strokeWidth={2.5} />
+              <span>Enviar</span>
             </button>
           </div>
 
@@ -205,9 +243,10 @@ export default function NegociacionPanel({
       )}
 
       {!esMiTurno && request.status !== 'precio_acordado' && (
-        <p className="negociacion-esperando">
-          ⏳ Esperando respuesta del {ultimaOferta.by === 'tecnico' ? 'técnico' : 'cliente'}...
-        </p>
+        <div className="negociacion-esperando">
+          <Clock size={14} strokeWidth={2.5} />
+          <span>Esperando respuesta del {ultimaOferta.by === 'tecnico' ? 'técnico' : 'cliente'}...</span>
+        </div>
       )}
     </div>
   );

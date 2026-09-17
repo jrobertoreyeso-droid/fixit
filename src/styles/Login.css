@@ -72,6 +72,10 @@
   font-size: 14px;
   transition: all var(--transition);
   font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .tipo-btn.active {
@@ -233,6 +237,7 @@
   margin-left: 6px;
   font-size: 14px;
   font-family: inherit;
+  cursor: pointer;
 }
 
 .login-toggle-btn:hover {
@@ -257,5 +262,10 @@
 
   .login-title {
     font-size: 19px;
+  }
+
+  .tipo-btn {
+    font-size: 13px;
+    padding: 11px 8px;
   }
 }

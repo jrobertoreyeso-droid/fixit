@@ -1,24 +1,25 @@
 import { useState, useCallback, useRef } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, Autocomplete } from '@react-google-maps/api';
+import { Search, MapPin, Navigation } from 'lucide-react';
 import { GOOGLE_MAPS_API_KEY } from '../firebase';
 import './MapaUbicacion.css';
 
-const DEFAULT_CENTER = { lat: 14.6349, lng: -90.5069 }; // Guatemala City
+const DEFAULT_CENTER = { lat: 14.6349, lng: -90.5069 };
 const LIBRARIES = ['places'];
 
 const mapStyles = [
-  { elementType: 'geometry', stylers: [{ color: '#0d1117' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#0d1117' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#8b949e' }] },
-  { featureType: 'administrative', elementType: 'geometry', stylers: [{ color: '#30363d' }] },
-  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#8b949e' }] },
-  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#161b22' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#21262d' }] },
-  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#0d1117' }] },
-  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#8b949e' }] },
-  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#161b22' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0a0a0f' }] },
-  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#8b949e' }] },
+  { elementType: 'geometry', stylers: [{ color: '#F5F5F7' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#FFFFFF' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#6E6E73' }] },
+  { featureType: 'administrative', elementType: 'geometry', stylers: [{ color: '#D2D2D7' }] },
+  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#6E6E73' }] },
+  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#E8F5E9' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#FFFFFF' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#E5E7EB' }] },
+  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#6E6E73' }] },
+  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#E5E7EB' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#D4E7F7' }] },
+  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#6E6E73' }] },
 ];
 
 const mapContainerStyle = {
@@ -131,20 +132,24 @@ export default function MapaUbicacion({ onUbicacionChange, ubicacionInicial }) {
   return (
     <div className="mapa-ubicacion">
       <div className="mapa-header">
-        <Autocomplete
-          onLoad={(ac) => (autocompleteRef.current = ac)}
-          onPlaceChanged={onPlaceChanged}
-          options={{ componentRestrictions: { country: 'gt' } }}
-        >
-          <input
-            type="text"
-            className="mapa-input"
-            placeholder="🔍 Busca tu dirección..."
-            defaultValue={direccion}
-          />
-        </Autocomplete>
+        <div className="mapa-input-wrapper">
+          <Search size={16} strokeWidth={2.5} className="mapa-input-icon" />
+          <Autocomplete
+            onLoad={(ac) => (autocompleteRef.current = ac)}
+            onPlaceChanged={onPlaceChanged}
+            options={{ componentRestrictions: { country: 'gt' } }}
+          >
+            <input
+              type="text"
+              className="mapa-input"
+              placeholder="Busca tu dirección..."
+              defaultValue={direccion}
+            />
+          </Autocomplete>
+        </div>
         <button type="button" onClick={usarMiUbicacion} className="mapa-btn-ubicacion">
-          📍 Usar mi ubicación
+          <Navigation size={16} strokeWidth={2.5} />
+          <span>Mi ubicación</span>
         </button>
       </div>
 
@@ -175,7 +180,8 @@ export default function MapaUbicacion({ onUbicacionChange, ubicacionInicial }) {
 
       {direccion && (
         <div className="mapa-direccion">
-          <strong>📍 Dirección:</strong> {direccion}
+          <MapPin size={14} strokeWidth={2.5} />
+          <span>{direccion}</span>
         </div>
       )}
 

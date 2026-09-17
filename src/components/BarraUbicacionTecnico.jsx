@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { calcularDistancia, formatearDistancia } from '../utils/distancia';
+import { MapPin, Navigation, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 import './BarraUbicacionTecnico.css';
 
 export default function BarraUbicacionTecnico({ onUbicacionChange }) {
@@ -7,7 +7,6 @@ export default function BarraUbicacionTecnico({ onUbicacionChange }) {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
 
-  // Cargar ubicación guardada en sessionStorage
   useEffect(() => {
     const guardada = sessionStorage.getItem('tecnico_ubicacion');
     if (guardada) {
@@ -70,7 +69,9 @@ export default function BarraUbicacionTecnico({ onUbicacionChange }) {
       {!ubicacion ? (
         <>
           <div className="barra-ubicacion-info">
-            <span className="barra-ubicacion-icon">📍</span>
+            <div className="barra-ubicacion-icon">
+              <MapPin size={20} strokeWidth={2.5} />
+            </div>
             <div>
               <div className="barra-ubicacion-titulo">Activa tu ubicación</div>
               <div className="barra-ubicacion-sub">Para ver solicitudes cercanas a ti</div>
@@ -81,13 +82,16 @@ export default function BarraUbicacionTecnico({ onUbicacionChange }) {
             onClick={activarUbicacion}
             disabled={cargando}
           >
-            {cargando ? '⏳ Localizando...' : '📡 Activar'}
+            <Navigation size={16} strokeWidth={2.5} />
+            <span>{cargando ? 'Localizando...' : 'Activar'}</span>
           </button>
         </>
       ) : (
         <>
           <div className="barra-ubicacion-info">
-            <span className="barra-ubicacion-icon activo">✓</span>
+            <div className="barra-ubicacion-icon activo">
+              <CheckCircle2 size={20} strokeWidth={2.5} />
+            </div>
             <div>
               <div className="barra-ubicacion-titulo">Ubicación activa</div>
               <div className="barra-ubicacion-sub">
@@ -100,11 +104,17 @@ export default function BarraUbicacionTecnico({ onUbicacionChange }) {
             onClick={activarUbicacion}
             disabled={cargando}
           >
-            {cargando ? '⏳' : '🔄 Actualizar'}
+            <RefreshCw size={14} strokeWidth={2.5} />
+            <span>{cargando ? 'Actualizando...' : 'Actualizar'}</span>
           </button>
         </>
       )}
-      {error && <div className="barra-ubicacion-error">{error}</div>}
+      {error && (
+        <div className="barra-ubicacion-error">
+          <AlertCircle size={14} strokeWidth={2.5} />
+          <span>{error}</span>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,16 +1,17 @@
 .selector-urgencia {
   margin: 16px 0;
-  padding: 16px;
+  padding: 18px;
   background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
 }
 
 .selector-urgencia h3 {
-  margin: 0 0 12px;
+  margin: 0 0 14px;
   color: var(--text-primary);
   font-size: 15px;
   font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .urgencia-grid {
@@ -23,48 +24,74 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 14px 10px;
+  gap: 6px;
+  padding: 16px 10px;
   background: #FFFFFF;
-  border: 2px solid var(--border);
-  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
   cursor: pointer;
   color: var(--text-primary);
-  transition: all 0.2s;
+  transition: all var(--transition);
   font-family: inherit;
+  position: relative;
 }
 
 .urgencia-btn:hover {
   border-color: var(--primary);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(35, 47, 114, 0.08);
+  box-shadow: var(--shadow-md);
 }
 
 .urgencia-btn.selected {
   border-color: var(--primary);
-  background: #E0E7FF;
+  background: var(--primary-soft);
   box-shadow: 0 0 0 3px rgba(35, 47, 114, 0.1);
 }
 
-.urgencia-icon {
-  font-size: 22px;
+.urgencia-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  transition: all var(--transition);
+  margin-bottom: 4px;
+}
+
+.urgencia-btn.selected .urgencia-icon-wrapper {
+  background: var(--primary);
+  color: #FFFFFF;
 }
 
 .urgencia-label {
   font-size: 13px;
   font-weight: 700;
+  color: var(--text-primary);
 }
 
 .urgencia-desc {
   font-size: 11px;
   color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.3;
 }
 
 .urgencia-recargo {
   margin-top: 4px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--primary);
+  background: var(--primary-soft);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.urgencia-btn.selected .urgencia-recargo {
+  background: var(--primary);
+  color: #FFFFFF;
 }
 
 .urgencia-total {
@@ -72,10 +99,10 @@
   grid-template-columns: 1fr auto;
   gap: 6px 12px;
   margin-top: 16px;
-  padding: 14px;
+  padding: 16px;
   background: #FFFFFF;
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
   font-size: 14px;
   color: var(--text-secondary);
 }
@@ -83,15 +110,43 @@
 .urgencia-total .total-label {
   color: var(--text-primary);
   font-weight: 700;
-  border-top: 1px solid var(--border);
-  padding-top: 8px;
+  border-top: 1px solid var(--border-soft);
+  padding-top: 10px;
+  margin-top: 4px;
 }
 
 .urgencia-total .total-valor {
   color: var(--primary);
   font-weight: 800;
-  font-size: 18px;
-  border-top: 1px solid var(--border);
-  padding-top: 8px;
+  font-size: 20px;
+  border-top: 1px solid var(--border-soft);
+  padding-top: 10px;
+  margin-top: 4px;
   text-align: right;
+  letter-spacing: -0.02em;
+}
+
+/* Responsive móvil */
+@media (max-width: 480px) {
+  .urgencia-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .urgencia-btn {
+    padding: 12px 8px;
+  }
+
+  .urgencia-icon-wrapper {
+    width: 36px;
+    height: 36px;
+  }
+
+  .urgencia-label {
+    font-size: 12px;
+  }
+
+  .urgencia-desc {
+    font-size: 10px;
+  }
 }

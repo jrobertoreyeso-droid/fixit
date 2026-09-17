@@ -1,12 +1,20 @@
 import { useState } from 'react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, updateDoc } from 'firebase/firestore';
+import {
+  Camera,
+  X,
+  Plus,
+  CheckCircle2,
+  AlertCircle,
+  Upload,
+} from 'lucide-react';
 import { db, storage } from '../firebase';
 import './EvidenciaTrabajo.css';
 
 export default function EvidenciaTrabajo({ request, onClose, onComplete }) {
-  const [fotos, setFotos] = useState([]);           // archivos seleccionados
-  const [previews, setPreviews] = useState([]);     // URLs temporales para preview
+  const [fotos, setFotos] = useState([]);
+  const [previews, setPreviews] = useState([]);
   const [descripcion, setDescripcion] = useState('');
   const [materiales, setMateriales] = useState('');
   const [precioFinal, setPrecioFinal] = useState(request.precioFinal || '');
@@ -48,7 +56,6 @@ export default function EvidenciaTrabajo({ request, onClose, onComplete }) {
     setProgreso(0);
 
     try {
-      // Subir fotos a Firebase Storage
       const urlsFotos = [];
 
       for (let i = 0; i < fotos.length; i++) {
@@ -64,10 +71,9 @@ export default function EvidenciaTrabajo({ request, onClose, onComplete }) {
         setProgreso(Math.round(((i + 1) / fotos.length) * 100));
       }
 
-      // Actualizar el documento en Firestore
       const requestRef = doc(db, 'requests', request.id);
       await updateDoc(requestRef, {
-        status: 'completado',
+        status: 'trabajo_terminado',
         evidencia: {
           fotos: urlsFotos,
           descripcion,
@@ -76,7 +82,6 @@ export default function EvidenciaTrabajo({ request, onClose, onComplete }) {
           timestamp: new Date(),
         },
         [`timeline.trabajo_terminado`]: new Date(),
-        [`timeline.completado`]: new Date(),
       });
 
       if (onComplete) onComplete();
@@ -93,8 +98,13 @@ export default function EvidenciaTrabajo({ request, onClose, onComplete }) {
     <div className="evidencia-overlay">
       <div className="evidencia-modal">
         <div className="evidencia-header">
-          <h3>📷 Evidencia del trabajo</h3>
-          <button className="evidencia-cerrar" onClick={onClose} disabled={subiendo}>✕</button>
+          <div className="evidencia-header-titulo">
+            <Camera size={20} strokeWidth={2.5} />
+            <h3>Evidencia del trabajo</h3>
+          </div>
+          <button className="evidencia-cerrar" onClick={onClose} disabled={subiendo}>
+            <X size={18} strokeWidth={2.5} />
+          </button>
         </div>
 
         <p className="evidencia-subtitulo">
@@ -102,7 +112,6 @@ export default function EvidenciaTrabajo({ request, onClose, onComplete }) {
         </p>
 
         <div className="evidencia-form">
-          {/* Fotos */}
           <label className="evidencia-label">
             Fotos del trabajo <span className="evidencia-req">*</span>
           </label>
@@ -116,7 +125,7 @@ export default function EvidenciaTrabajo({ request, onClose, onComplete }) {
                   onClick={() => quitarFoto(idx)}
                   disabled={subiendo}
                 >
-                  ✕
+                  <X size={12} strokeWidth={2.5} />
                 </button>
               </div>
             ))}
@@ -131,13 +140,12 @@ export default function EvidenciaTrabajo({ request, onClose, onComplete }) {
                   disabled={subiendo}
                   style={{ display: 'none' }}
                 />
-                <span>📷</span>
+                <Plus size={22} strokeWidth={2.5} />
                 <span className="evidencia-foto-add-texto">Agregar foto</span>
               </label>
             )}
           </div>
 
-          {/* Descripción */}
           <label className="evidencia-label">
             Descripción del trabajo <span className="evidencia-req">*</span>
           </label>
@@ -150,7 +158,6 @@ export default function EvidenciaTrabajo({ request, onClose, onComplete }) {
             disabled={subiendo}
           />
 
-          {/* Materiales */}
           <label className="evidencia-label">Materiales utilizados (opcional)</label>
           <input
             type="text"
@@ -161,7 +168,6 @@ export default function EvidenciaTrabajo({ request, onClose, onComplete }) {
             disabled={subiendo}
           />
 
-          {/* Precio final */}
           <label className="evidencia-label">Precio final (Q)</label>
           <input
             type="number"
@@ -178,7 +184,12 @@ export default function EvidenciaTrabajo({ request, onClose, onComplete }) {
             </div>
           )}
 
-          {error && <div className="evidencia-error">{error}</div>}
+          {error && (
+            <div className="evidencia-error">
+              <AlertCircle size={14} strokeWidth={2.5} />
+              <span>{error}</span>
+            </div>
+          )}
 
           <div className="evidencia-botones">
             <button
@@ -193,7 +204,17 @@ export default function EvidenciaTrabajo({ request, onClose, onComplete }) {
               onClick={handleSubmit}
               disabled={subiendo}
             >
-              {subiendo ? 'Subiendo...' : '✅ Enviar evidencia'}
+              {subiendo ? (
+                <>
+                  <Upload size={16} strokeWidth={2.5} />
+                  <span>Subiendo...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={16} strokeWidth={2.5} />
+                  <span>Enviar evidencia</span>
+                </>
+              )}
             </button>
           </div>
         </div>

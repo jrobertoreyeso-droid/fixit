@@ -7,6 +7,7 @@ import {
   updateProfile
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { User, Wrench } from 'lucide-react';
 import { auth, db } from '../firebase';
 import '../styles/Login.css';
 
@@ -15,7 +16,7 @@ const TIPO_CLIENTE = 'cliente';
 
 export default function Login({ setUserType }) {
   const [tipo, setTipo] = useState(TIPO_CLIENTE);
-  const [modo, setModo] = useState('login'); // 'login' | 'registro'
+  const [modo, setModo] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nombre, setNombre] = useState('');
@@ -117,21 +118,22 @@ export default function Login({ setUserType }) {
           <p>Encuentra. Negocia. Soluciona.</p>
         </div>
 
-        {/* Selector de tipo de cuenta */}
         <div className="tipo-selector">
           <button
             type="button"
             className={`tipo-btn ${tipo === TIPO_CLIENTE ? 'active' : ''}`}
             onClick={() => { setTipo(TIPO_CLIENTE); limpiar(); }}
           >
-            👤 Cliente
+            <User size={16} strokeWidth={2.5} />
+            <span>Cliente</span>
           </button>
           <button
             type="button"
             className={`tipo-btn ${tipo === TIPO_TECNICO ? 'active' : ''}`}
             onClick={() => { setTipo(TIPO_TECNICO); limpiar(); }}
           >
-            🔧 Técnico
+            <Wrench size={16} strokeWidth={2.5} />
+            <span>Técnico</span>
           </button>
         </div>
 
