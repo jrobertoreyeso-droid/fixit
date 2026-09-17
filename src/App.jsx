@@ -7,9 +7,18 @@ import MapaUbicacion from './components/MapaUbicacion';
 import SelectorUrgencia from './components/SelectorUrgencia';
 import NegociacionPanel from './components/NegociacionPanel';
 import EstadoServicio from './components/EstadoServicio';
+import BarraUbicacionTecnico from './components/BarraUbicacionTecnico';
+import TabsServicios from './components/TabsServicios';
+import Logo from './components/Logo';
+import { calcularDistancia, formatearDistancia } from './utils/distancia';
 import './App.css';
 
 const CATEGORIAS = ['⚡ Electricistas', '🔧 Plomeros', '❄️ Aire acondicionado', '🔑 Cerrajeros', '📱 Celulares', '🎨 Pintores', '🪚 Carpinteros', '🧹 Limpieza'];
+const RADIO_MAX_KM = 20;
+
+const ESTADOS_PENDIENTES = ['pendiente', 'negociando'];
+const ESTADOS_ACTIVOS = ['precio_acordado', 'pagado', 'en_camino', 'llego', 'en_proceso', 'trabajo_terminado'];
+const ESTADOS_FINALIZADOS = ['completado', 'rechazado', 'cancelado'];
 
 function App() {
   const [user, setUser] = useState(null);
@@ -29,6 +38,8 @@ function App() {
   const [notification, setNotification] = useState('');
   const [ubicacion, setUbicacion] = useState(null);
   const [urgencia, setUrgencia] = useState('normal');
+  const [tabActiva, setTabActiva] = useState('pendientes');
+  const [ubicacionTecnico, setUbicacionTecnico] = useState(null);
 
   useEffect(() => {
     onAuthStateChanged(auth, (currentUser) => {
@@ -44,6 +55,10 @@ function App() {
       loadChats();
     }
   }, [user, userType]);
+
+  useEffect(() => {
+    setTabActiva('pendientes');
+  }, [userType]);
 
   const showNotification = (msg) => {
     setNotification(msg);
@@ -63,8 +78,10 @@ function App() {
   };
 
   const loadAvailableRequests = async () => {
+    if (!user) return;
     try {
-      const q = query(
+      // Consulta 1: solicitudes activas (todas, sin importar quién las tome)
+      const q1 = query(
         collection(db, 'requests'),
         where('status', 'in', [
           'pendiente',
@@ -77,9 +94,23 @@ function App() {
           'trabajo_terminado'
         ])
       );
-      const querySnapshot = await getDocs(q);
-      const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setAllRequests(data);
+      const snap1 = await getDocs(q1);
+      const activas = snap1.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      // Consulta 2: solicitudes donde YO soy el técnico seleccionado (cualquier estado)
+      const q2 = query(
+        collection(db, 'requests'),
+        where('tecnicoSeleccionado.uid', '==', user.uid)
+      );
+      const snap2 = await getDocs(q2);
+      const mias = snap2.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      // Unir y eliminar duplicados por id
+      const map = new Map();
+      [...activas, ...mias].forEach(sol => map.set(sol.id, sol));
+      const todas = Array.from(map.values());
+
+      setAllRequests(todas);
     } catch (error) {
       console.error('Error:', error);
     }
@@ -199,7 +230,6 @@ function App() {
 
   const handleSendMessage = async () => {
     if (!chatMessage.trim() || !selectedChat) return;
-
     try {
       const chatRef = doc(db, 'chats', selectedChat.id);
       const newMessage = {
@@ -207,11 +237,9 @@ function App() {
         text: chatMessage,
         timestamp: new Date()
       };
-
       await updateDoc(chatRef, {
         messages: [...(selectedChat.messages || []), newMessage]
       });
-
       setChatMessage('');
       loadChats();
     } catch (error) {
@@ -240,109 +268,146 @@ function App() {
     setView('home');
   };
 
+  const clasificarSolicitudes = (lista) => {
+    return {
+      pendientes: lista.filter(r => ESTADOS_PENDIENTES.includes(r.status)),
+      activos: lista.filter(r => ESTADOS_ACTIVOS.includes(r.status)),
+      finalizados: lista.filter(r => ESTADOS_FINALIZADOS.includes(r.status)),
+    };
+  };
+
+  const procesarSolicitudesTecnico = (lista) => {
+    let procesadas = lista;
+
+    if (ubicacionTecnico) {
+      procesadas = procesadas
+        .map(sol => ({
+          ...sol,
+          distancia: calcularDistancia(ubicacionTecnico, sol.ubicacion)
+        }))
+        .filter(sol => sol.distancia == null || sol.distancia <= RADIO_MAX_KM)
+        .sort((a, b) => {
+          if (a.distancia == null) return 1;
+          if (b.distancia == null) return -1;
+          return a.distancia - b.distancia;
+        });
+    }
+
+    return procesadas;
+  };
+
   if (loading) return <div className="loading">Cargando...</div>;
   if (!user) return <Login setUserType={setUserType} />;
+
+  const solicitudesCliente = clasificarSolicitudes(requests);
+  const solicitudesTecnico = clasificarSolicitudes(procesarSolicitudesTecnico(allRequests));
 
   return (
     <div className="app-container">
       {notification && <div className="notification">{notification}</div>}
 
       <header className="header">
-        <h1>🔧 FixIt PRO</h1>
+        <div className="header-logo">
+          <Logo size={28} color="#232F72" />
+          <span>FixIt</span>
+        </div>
         <div className="user-section">
           <div className="user-type-toggle">
             <button className={userType === 'cliente' ? 'active' : ''} onClick={() => { setUserType('cliente'); setView('home'); }}>👤 Cliente</button>
             <button className={userType === 'proveedor' ? 'active' : ''} onClick={() => { setUserType('proveedor'); setView('home'); }}>🔧 Técnico</button>
           </div>
-          <span>{user.email}</span>
+          <span className="user-email">{user.email}</span>
           <button onClick={handleLogout} className="logout-btn">Salir</button>
         </div>
       </header>
 
+      {/* VISTA CLIENTE */}
       {userType === 'cliente' && (
         <>
           {view === 'home' && (
             <div className="home-view">
-              <div className="sections">
-                <div className="section">
-                  <h2>📋 Mis Solicitudes</h2>
-                  {requests.length === 0 ? (
-                    <p>No tienes solicitudes aún</p>
-                  ) : (
-                    <div className="requests-list">
-                      {requests.map(req => (
-                        <div key={req.id} className="request-card">
-                          <h4>{req.category}</h4>
-                          <p>{req.description}</p>
-                          <p className="budget">💰 Q{req.budget}</p>
-                          <span className={`status status-${req.status}`}>{req.status}</span>
+              <TabsServicios
+                activo={tabActiva}
+                onChange={setTabActiva}
+                contadores={{
+                  pendientes: solicitudesCliente.pendientes.length,
+                  activos: solicitudesCliente.activos.length,
+                  finalizados: solicitudesCliente.finalizados.length,
+                }}
+              />
 
-                          {req.ubicacion && (
-                            <div className="solicitud-ubicacion">
-                              <p>📍 {req.ubicacion.direccion || 'Ubicación en el mapa'}</p>
-                              <a
-                                href={`https://www.google.com/maps?q=${req.ubicacion.lat},${req.ubicacion.lng}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="ver-mapa-link"
-                              >
-                                Ver en Google Maps →
-                              </a>
-                            </div>
-                          )}
-
-                          {req.urgencia && req.urgencia !== 'normal' && (
-                            <p className="urgencia-badge">
-                              {req.urgencia === 'programado' && '📅 Programado'}
-                              {req.urgencia === 'poco_urgente' && '🟡 Poco urgente'}
-                              {req.urgencia === 'muy_urgente' && '🔴 Muy urgente'}
-                            </p>
-                          )}
-
-                          {/* Si está en negociación, muestra el panel */}
-                          {req.negotiation && req.negotiation.length > 0 &&
-                           !['precio_acordado', 'pagado', 'en_camino', 'llego', 'en_proceso', 'trabajo_terminado', 'completado'].includes(req.status) && (
-                            <NegociacionPanel
-                              request={req}
-                              currentUser={user}
-                              userType="cliente"
-                              onUpdate={loadMyRequests}
-                            />
-                          )}
-
-                          {/* Si ya se acordó precio, muestra el botón de pago */}
-                          {req.status === 'precio_acordado' && (
-                            <div className="action-buttons">
-                              <button onClick={() => handlePayment(req.id)} className="pay-btn">💳 Pagar Q{req.precioFinal}</button>
-                              <button onClick={() => { setSelectedChat(chats.find(c => c.requestId === req.id)); setView('chat'); }} className="chat-btn">💬 Chat</button>
-                            </div>
-                          )}
-
-                          {/* Estados posteriores al pago: mostrar timeline */}
-                          {['pagado', 'en_camino', 'llego', 'en_proceso', 'trabajo_terminado', 'completado'].includes(req.status) && (
-                            <>
-                              <EstadoServicio
-                                request={req}
-                                userType="cliente"
-                                onUpdate={loadMyRequests}
-                              />
-                              {req.status !== 'completado' && (
-                                <div className="action-buttons">
-                                  <button onClick={() => { setSelectedChat(chats.find(c => c.requestId === req.id)); setView('chat'); }} className="chat-btn">💬 Chat</button>
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      ))}
+              <div className="section">
+                {tabActiva === 'pendientes' && (
+                  <>
+                    <h2>🆕 Solicitudes Pendientes</h2>
+                    {solicitudesCliente.pendientes.length === 0 ? (
+                      <p className="tab-vacio">No tienes solicitudes pendientes</p>
+                    ) : (
+                      <div className="requests-list">
+                        {solicitudesCliente.pendientes.map(req => (
+                          <TarjetaCliente
+                            key={req.id}
+                            req={req}
+                            user={user}
+                            chats={chats}
+                            onUpdate={loadMyRequests}
+                            onPayment={handlePayment}
+                            onOpenChat={(chat) => { setSelectedChat(chat); setView('chat'); }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    <div className="seccion-nueva">
+                      <button onClick={() => setView('crear')} className="btn-new">+ Crear nueva solicitud</button>
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
 
-                <div className="section">
-                  <h2>🆕 Nueva Solicitud</h2>
-                  <button onClick={() => setView('crear')} className="btn-new">+ Crear Solicitud</button>
-                </div>
+                {tabActiva === 'activos' && (
+                  <>
+                    <h2>⚡ Servicios en Curso</h2>
+                    {solicitudesCliente.activos.length === 0 ? (
+                      <p className="tab-vacio">No tienes servicios en curso</p>
+                    ) : (
+                      <div className="requests-list">
+                        {solicitudesCliente.activos.map(req => (
+                          <TarjetaCliente
+                            key={req.id}
+                            req={req}
+                            user={user}
+                            chats={chats}
+                            onUpdate={loadMyRequests}
+                            onPayment={handlePayment}
+                            onOpenChat={(chat) => { setSelectedChat(chat); setView('chat'); }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {tabActiva === 'finalizados' && (
+                  <>
+                    <h2>✅ Servicios Finalizados</h2>
+                    {solicitudesCliente.finalizados.length === 0 ? (
+                      <p className="tab-vacio">Aún no tienes servicios finalizados</p>
+                    ) : (
+                      <div className="requests-list">
+                        {solicitudesCliente.finalizados.map(req => (
+                          <TarjetaCliente
+                            key={req.id}
+                            req={req}
+                            user={user}
+                            chats={chats}
+                            onUpdate={loadMyRequests}
+                            onPayment={handlePayment}
+                            onOpenChat={(chat) => { setSelectedChat(chat); setView('chat'); }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -427,110 +492,107 @@ function App() {
         </>
       )}
 
+      {/* VISTA TÉCNICO */}
       {userType === 'proveedor' && (
         <div className="provider-view">
-          <div className="requests-available">
-            <h2>📌 Solicitudes Disponibles</h2>
-            {allRequests.length === 0 ? (
-              <p>No hay solicitudes disponibles</p>
-            ) : (
-              <div className="requests-list">
-                {allRequests.map(req => {
-                  // ¿Este técnico es el que está asignado a esta solicitud?
-                  const soyElTecnicoAsignado = req.tecnicoSeleccionado?.uid === user.uid;
-                  const yaHiceOferta = req.negotiation?.some(n => n.byUid === user.uid);
+          <BarraUbicacionTecnico onUbicacionChange={setUbicacionTecnico} />
 
-                  return (
-                    <div key={req.id} className="request-card">
-                      <h4>{req.category}</h4>
-                      <p>{req.description}</p>
-                      <p className="budget">💰 Presupuesto: Q{req.budget}</p>
-                      <p className="client-email">📧 {req.userEmail}</p>
+          <TabsServicios
+            activo={tabActiva}
+            onChange={setTabActiva}
+            contadores={{
+              pendientes: solicitudesTecnico.pendientes.filter(r =>
+                (r.negotiation || []).length === 0 ||
+                r.tecnicoSeleccionado?.uid === user.uid ||
+                (r.negotiation || []).some(n => n.byUid === user.uid)
+              ).length,
+              activos: solicitudesTecnico.activos.filter(r =>
+                r.tecnicoSeleccionado?.uid === user.uid
+              ).length,
+              finalizados: solicitudesTecnico.finalizados.filter(r =>
+                r.tecnicoSeleccionado?.uid === user.uid
+              ).length,
+            }}
+          />
 
-                      {req.ubicacion && (
-                        <div className="solicitud-ubicacion">
-                          <p>📍 {req.ubicacion.direccion || 'Ubicación en el mapa'}</p>
-                          <a
-                            href={`https://www.google.com/maps?q=${req.ubicacion.lat},${req.ubicacion.lng}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="ver-mapa-link"
-                          >
-                            Ver en Google Maps →
-                          </a>
-                        </div>
-                      )}
+          {tabActiva === 'pendientes' && (
+            <>
+              <h2 className="seccion-titulo">🆕 Solicitudes Disponibles</h2>
+              {solicitudesTecnico.pendientes.length === 0 ? (
+                <p className="tab-vacio">No hay solicitudes disponibles cerca de ti</p>
+              ) : (
+                <div className="requests-list">
+                  {solicitudesTecnico.pendientes.map(req => (
+                    <TarjetaTecnico
+                      key={req.id}
+                      req={req}
+                      user={user}
+                      selectedRequest={selectedRequest}
+                      offerPrice={offerPrice}
+                      setSelectedRequest={setSelectedRequest}
+                      setOfferPrice={setOfferPrice}
+                      onMakeOffer={handleMakeOffer}
+                      onUpdate={loadAvailableRequests}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
 
-                      {req.urgencia && req.urgencia !== 'normal' && (
-                        <p className="urgencia-badge">
-                          {req.urgencia === 'programado' && '📅 Programado'}
-                          {req.urgencia === 'poco_urgente' && '🟡 Poco urgente'}
-                          {req.urgencia === 'muy_urgente' && '🔴 Muy urgente'}
-                        </p>
-                      )}
+          {tabActiva === 'activos' && (
+            <>
+              <h2 className="seccion-titulo">⚡ Mis Servicios en Curso</h2>
+              {solicitudesTecnico.activos.filter(r => r.tecnicoSeleccionado?.uid === user.uid).length === 0 ? (
+                <p className="tab-vacio">No tienes servicios activos</p>
+              ) : (
+                <div className="requests-list">
+                  {solicitudesTecnico.activos
+                    .filter(r => r.tecnicoSeleccionado?.uid === user.uid)
+                    .map(req => (
+                      <TarjetaTecnico
+                        key={req.id}
+                        req={req}
+                        user={user}
+                        selectedRequest={selectedRequest}
+                        offerPrice={offerPrice}
+                        setSelectedRequest={setSelectedRequest}
+                        setOfferPrice={setOfferPrice}
+                        onMakeOffer={handleMakeOffer}
+                        onUpdate={loadAvailableRequests}
+                      />
+                    ))}
+                </div>
+              )}
+            </>
+          )}
 
-                      {/* Si YO soy el técnico asignado → mostrar timeline */}
-                      {soyElTecnicoAsignado && ['precio_acordado', 'pagado', 'en_camino', 'llego', 'en_proceso', 'trabajo_terminado', 'completado'].includes(req.status) && (
-                        <EstadoServicio
-                          request={req}
-                          userType="tecnico"
-                          onUpdate={loadAvailableRequests}
-                        />
-                      )}
-
-                      {/* Si NO soy el asignado pero la solicitud ya tiene negociación → mostrar panel */}
-                      {!soyElTecnicoAsignado && req.negotiation && req.negotiation.length > 0 &&
-                       ['negociando'].includes(req.status) && (
-                        <NegociacionPanel
-                          request={req}
-                          currentUser={user}
-                          userType="tecnico"
-                          onUpdate={loadAvailableRequests}
-                        />
-                      )}
-
-                      {/* Si soy el asignado pero aún no acepté precio → mostrar panel */}
-                      {soyElTecnicoAsignado && req.status === 'negociando' && (
-                        <NegociacionPanel
-                          request={req}
-                          currentUser={user}
-                          userType="tecnico"
-                          onUpdate={loadAvailableRequests}
-                        />
-                      )}
-
-                      {/* Si la solicitud es nueva (sin negociación) → botón de hacer oferta */}
-                      {(!req.negotiation || req.negotiation.length === 0) && req.status === 'pendiente' && (
-                        <>
-                          {selectedRequest?.id === req.id ? (
-                            <div className="offer-form">
-                              <input
-                                type="number"
-                                placeholder="Tu precio (Q)"
-                                value={offerPrice}
-                                onChange={(e) => setOfferPrice(e.target.value)}
-                              />
-                              <button onClick={handleMakeOffer} className="submit-btn">📤 Enviar Oferta</button>
-                              <button onClick={() => setSelectedRequest(null)} className="cancel-btn">Cancelar</button>
-                            </div>
-                          ) : (
-                            <button onClick={() => setSelectedRequest(req)} className="offer-btn">💰 Hacer Oferta</button>
-                          )}
-                        </>
-                      )}
-
-                      {/* Si ya hay negociación en curso y no soy el asignado, pero ya hice oferta */}
-                      {!soyElTecnicoAsignado && yaHiceOferta && req.status === 'negociando' && (
-                        <p style={{marginTop: '8px', fontSize: '12px', color: 'var(--text-secondary)'}}>
-                          ⏳ Esperando que se cierre la negociación con otro técnico...
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          {tabActiva === 'finalizados' && (
+            <>
+              <h2 className="seccion-titulo">✅ Servicios Finalizados</h2>
+              {solicitudesTecnico.finalizados.filter(r => r.tecnicoSeleccionado?.uid === user.uid).length === 0 ? (
+                <p className="tab-vacio">Aún no has completado servicios</p>
+              ) : (
+                <div className="requests-list">
+                  {solicitudesTecnico.finalizados
+                    .filter(r => r.tecnicoSeleccionado?.uid === user.uid)
+                    .map(req => (
+                      <TarjetaTecnico
+                        key={req.id}
+                        req={req}
+                        user={user}
+                        selectedRequest={selectedRequest}
+                        offerPrice={offerPrice}
+                        setSelectedRequest={setSelectedRequest}
+                        setOfferPrice={setOfferPrice}
+                        onMakeOffer={handleMakeOffer}
+                        onUpdate={loadAvailableRequests}
+                      />
+                    ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 
@@ -559,6 +621,173 @@ function App() {
             </div>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+/* ============================================ */
+/* COMPONENTES INTERNOS */
+/* ============================================ */
+
+function TarjetaCliente({ req, user, chats, onUpdate, onPayment, onOpenChat }) {
+  const mostrarNegociacion = req.negotiation && req.negotiation.length > 0 &&
+    !['precio_acordado', 'pagado', 'en_camino', 'llego', 'en_proceso', 'trabajo_terminado', 'completado'].includes(req.status);
+
+  const mostrarPago = req.status === 'precio_acordado';
+  const mostrarTimeline = ['pagado', 'en_camino', 'llego', 'en_proceso', 'trabajo_terminado', 'completado'].includes(req.status);
+
+  return (
+    <div className="request-card">
+      <h4>{req.category}</h4>
+      <p>{req.description}</p>
+      <p className="budget">💰 Q{req.budget}</p>
+      <span className={`status status-${req.status}`}>{req.status}</span>
+
+      {req.ubicacion && (
+        <div className="solicitud-ubicacion">
+          <p>📍 {req.ubicacion.direccion || 'Ubicación en el mapa'}</p>
+          <a
+            href={`https://www.google.com/maps?q=${req.ubicacion.lat},${req.ubicacion.lng}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ver-mapa-link"
+          >
+            Ver en Google Maps →
+          </a>
+        </div>
+      )}
+
+      {req.urgencia && req.urgencia !== 'normal' && (
+        <p className="urgencia-badge">
+          {req.urgencia === 'programado' && '📅 Programado'}
+          {req.urgencia === 'poco_urgente' && '🟡 Poco urgente'}
+          {req.urgencia === 'muy_urgente' && '🔴 Muy urgente'}
+        </p>
+      )}
+
+      {mostrarNegociacion && (
+        <NegociacionPanel
+          request={req}
+          currentUser={user}
+          userType="cliente"
+          onUpdate={onUpdate}
+        />
+      )}
+
+      {mostrarPago && (
+        <div className="action-buttons">
+          <button onClick={() => onPayment(req.id)} className="pay-btn">💳 Pagar Q{req.precioFinal}</button>
+          <button onClick={() => onOpenChat(chats.find(c => c.requestId === req.id))} className="chat-btn">💬 Chat</button>
+        </div>
+      )}
+
+      {mostrarTimeline && (
+        <>
+          <EstadoServicio
+            request={req}
+            userType="cliente"
+            onUpdate={onUpdate}
+          />
+          {req.status !== 'completado' && (
+            <div className="action-buttons">
+              <button onClick={() => onOpenChat(chats.find(c => c.requestId === req.id))} className="chat-btn">💬 Chat</button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function TarjetaTecnico({ req, user, selectedRequest, offerPrice, setSelectedRequest, setOfferPrice, onMakeOffer, onUpdate }) {
+  const soyElTecnicoAsignado = req.tecnicoSeleccionado?.uid === user.uid;
+  const yaHiceOferta = req.negotiation?.some(n => n.byUid === user.uid);
+  const sinNegociacion = !req.negotiation || req.negotiation.length === 0;
+
+  return (
+    <div className="request-card">
+      <div className="request-card-header">
+        <h4>{req.category}</h4>
+        {req.distancia != null && (
+          <span className="distancia-badge">
+            📍 A {formatearDistancia(req.distancia)}
+          </span>
+        )}
+      </div>
+
+      <p>{req.description}</p>
+      <p className="budget">💰 Presupuesto: Q{req.budget}</p>
+      <p className="client-email">📧 {req.userEmail}</p>
+
+      {req.ubicacion && (
+        <div className="solicitud-ubicacion">
+          <p>📍 {req.ubicacion.direccion || 'Ubicación en el mapa'}</p>
+          <a
+            href={`https://www.google.com/maps?q=${req.ubicacion.lat},${req.ubicacion.lng}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ver-mapa-link"
+          >
+            Ver en Google Maps →
+          </a>
+        </div>
+      )}
+
+      {req.urgencia && req.urgencia !== 'normal' && (
+        <p className="urgencia-badge">
+          {req.urgencia === 'programado' && '📅 Programado'}
+          {req.urgencia === 'poco_urgente' && '🟡 Poco urgente'}
+          {req.urgencia === 'muy_urgente' && '🔴 Muy urgente'}
+        </p>
+      )}
+
+      {soyElTecnicoAsignado && ['pagado', 'en_camino', 'llego', 'en_proceso', 'trabajo_terminado', 'completado'].includes(req.status) && (
+        <EstadoServicio
+          request={req}
+          userType="tecnico"
+          onUpdate={onUpdate}
+        />
+      )}
+
+      {soyElTecnicoAsignado && req.status === 'precio_acordado' && !req.paymentDate && (
+        <p className="mensaje-esperando">⏳ Esperando que el cliente realice el pago...</p>
+      )}
+
+      {soyElTecnicoAsignado && req.status === 'negociando' && (
+        <NegociacionPanel
+          request={req}
+          currentUser={user}
+          userType="tecnico"
+          onUpdate={onUpdate}
+        />
+      )}
+
+      {sinNegociacion && req.status === 'pendiente' && (
+        <>
+          {selectedRequest?.id === req.id ? (
+            <div className="offer-form">
+              <input
+                type="number"
+                placeholder="Tu precio (Q)"
+                value={offerPrice}
+                onChange={(e) => setOfferPrice(e.target.value)}
+              />
+              <button onClick={onMakeOffer} className="submit-btn">📤 Enviar Oferta</button>
+              <button onClick={() => setSelectedRequest(null)} className="cancel-btn">Cancelar</button>
+            </div>
+          ) : (
+            <button onClick={() => setSelectedRequest(req)} className="offer-btn">💰 Hacer Oferta</button>
+          )}
+        </>
+      )}
+
+      {!soyElTecnicoAsignado && yaHiceOferta && req.status === 'negociando' && (
+        <p className="mensaje-esperando">⏳ Esperando que se cierre con otro técnico...</p>
+      )}
+
+      {!soyElTecnicoAsignado && !yaHiceOferta && req.negotiation?.length > 0 && req.status === 'negociando' && (
+        <p className="mensaje-esperando">🔒 Otro técnico está negociando...</p>
       )}
     </div>
   );

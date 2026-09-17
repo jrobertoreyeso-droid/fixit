@@ -1,117 +1,140 @@
-/* ============================================
-   FIXIT - Estilos principales
-   Paleta: Blanco + Azul oscuro + Celeste
-   ============================================ */
+/* ============================================ */
+/* FIXIT - Estilos principales                   */
+/* Estilo: Apple - minimalista y tecnológico     */
+/* ============================================ */
 
 .app-container {
   min-height: 100vh;
   background: var(--bg-secondary);
-  padding-bottom: 40px;
+  padding-bottom: 60px;
 }
 
-/* ============================================
-   HEADER
-   ============================================ */
+/* ============================================ */
+/* HEADER                                        */
+/* ============================================ */
 .header {
-  background: #FFFFFF;
-  border-bottom: 1px solid var(--border);
-  padding: 16px 32px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--border-soft);
+  padding: 14px 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   position: sticky;
   top: 0;
   z-index: 100;
+  gap: 16px;
 }
 
-.header h1 {
-  font-size: 24px;
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
   font-weight: 800;
   color: var(--primary);
   letter-spacing: -0.5px;
 }
 
+.header-logo svg {
+  width: 28px;
+  height: 28px;
+}
+
 .user-section {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.user-section > span {
+.user-email {
   font-size: 13px;
   color: var(--text-secondary);
   font-weight: 500;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .user-type-toggle {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   background: var(--bg-secondary);
-  padding: 4px;
-  border-radius: 12px;
+  padding: 3px;
+  border-radius: var(--radius-full);
 }
 
 .user-type-toggle button {
-  padding: 8px 16px;
+  padding: 7px 16px;
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  border-radius: 8px;
+  border-radius: var(--radius-full);
   font-weight: 600;
   font-size: 13px;
-  transition: all 0.2s ease;
+  transition: all var(--transition);
+  white-space: nowrap;
 }
 
 .user-type-toggle button.active {
   background: var(--primary);
-  color: #FFFFFF;
-  box-shadow: 0 2px 6px rgba(35, 47, 114, 0.25);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-primary);
 }
 
 .user-type-toggle button:hover:not(.active) {
-  background: #FFFFFF;
+  background: rgba(35, 47, 114, 0.05);
   color: var(--primary);
 }
 
 .logout-btn {
-  padding: 8px 16px;
+  padding: 7px 16px;
   background: transparent;
-  border: 1.5px solid var(--border);
+  border: 1px solid var(--border);
   color: var(--text-secondary);
-  border-radius: 10px;
+  border-radius: var(--radius-full);
   font-weight: 600;
   font-size: 13px;
-  transition: all 0.2s;
+  transition: all var(--transition);
 }
 
 .logout-btn:hover {
   border-color: var(--error);
   color: var(--error);
-  background: #FEF2F2;
+  background: var(--error-soft);
 }
 
-/* ============================================
-   NOTIFICACIONES
-   ============================================ */
+/* ============================================ */
+/* NOTIFICACIONES                                */
+/* ============================================ */
 .notification {
   position: fixed;
   top: 80px;
   right: 24px;
-  background: var(--primary);
-  color: #FFFFFF;
-  padding: 14px 20px;
-  border-radius: 12px;
-  font-weight: 600;
+  background: var(--text-primary);
+  color: var(--text-inverse);
+  padding: 14px 22px;
+  border-radius: var(--radius-lg);
+  font-weight: 500;
   font-size: 14px;
-  box-shadow: 0 8px 24px rgba(35, 47, 114, 0.3);
+  box-shadow: var(--shadow-lg);
   z-index: 1000;
-  animation: slideIn 0.3s ease;
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: calc(100vw - 48px);
 }
 
 @keyframes slideIn {
-  from { transform: translateX(400px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(calc(100% + 24px));
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .loading {
@@ -124,125 +147,179 @@
   background: var(--bg-secondary);
 }
 
-/* ============================================
-   VISTA CLIENTE - HOME
-   ============================================ */
+/* ============================================ */
+/* HOME VIEW                                     */
+/* ============================================ */
 .home-view {
-  max-width: 900px;
+  max-width: 720px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 24px 16px;
 }
 
-.sections {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+.provider-view {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px;
 }
 
 .section {
-  background: #FFFFFF;
-  border-radius: 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-soft);
 }
 
 .section h2 {
   font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  letter-spacing: -0.02em;
 }
 
-.section p {
+.seccion-titulo {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  padding: 0 4px;
+  letter-spacing: -0.02em;
+}
+
+.tab-vacio {
+  text-align: center;
+  padding: 48px 24px;
   color: var(--text-secondary);
   font-size: 14px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  font-weight: 500;
+}
+
+.seccion-nueva {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-soft);
 }
 
 .btn-new {
   width: 100%;
   padding: 16px;
   background: var(--primary);
-  color: #FFFFFF;
+  color: var(--text-inverse);
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   font-weight: 700;
   font-size: 15px;
-  transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(35, 47, 114, 0.2);
+  transition: all var(--transition);
+  box-shadow: var(--shadow-primary);
 }
 
 .btn-new:hover {
   background: var(--primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(35, 47, 114, 0.3);
+  box-shadow: 0 8px 24px rgba(35, 47, 114, 0.25);
 }
 
-/* ============================================
-   TARJETAS DE SOLICITUD
-   ============================================ */
+.btn-new:active {
+  transform: translateY(0);
+}
+
+/* ============================================ */
+/* TARJETAS DE SOLICITUD                         */
+/* ============================================ */
 .requests-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .request-card {
-  background: #FFFFFF;
-  border: 1.5px solid var(--border);
-  border-radius: 14px;
-  padding: 18px;
-  transition: all 0.2s;
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  transition: all var(--transition);
 }
 
 .request-card:hover {
-  border-color: var(--primary);
-  box-shadow: 0 4px 12px rgba(35, 47, 114, 0.08);
+  border-color: var(--border);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 
 .request-card h4 {
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.request-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.request-card-header h4 {
+  margin: 0;
 }
 
 .request-card > p {
   color: var(--text-secondary);
   font-size: 14px;
   margin-bottom: 6px;
+  line-height: 1.5;
 }
 
 .request-card .budget {
   color: var(--primary);
   font-weight: 700;
-  font-size: 15px;
+  font-size: 16px;
+  letter-spacing: -0.01em;
 }
 
 .request-card .client-email {
   color: var(--text-tertiary);
-  font-size: 13px;
+  font-size: 12px;
+}
+
+.distancia-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 /* Status badges */
 .status {
   display: inline-block;
   padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 12px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
   margin-top: 8px;
 }
 
 .status-pendiente {
-  background: #FEF3C7;
+  background: var(--warning-soft);
   color: #92400E;
 }
 
 .status-negociando {
-  background: #E0E7FF;
+  background: var(--primary-soft);
   color: var(--primary);
 }
 
@@ -257,27 +334,37 @@
 }
 
 .status-completado {
-  background: #D1FAE5;
+  background: var(--success-soft);
   color: #065F46;
 }
 
-.status-rechazado {
-  background: #FEE2E2;
+.status-en_camino,
+.status-llego,
+.status-en_proceso,
+.status-trabajo_terminado {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.status-rechazado,
+.status-cancelado {
+  background: var(--error-soft);
   color: #991B1B;
 }
 
-/* Ubicación en la solicitud */
+/* Ubicación */
 .solicitud-ubicacion {
-  margin-top: 10px;
-  padding: 10px 12px;
+  margin-top: 12px;
+  padding: 12px 14px;
   background: var(--bg-secondary);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font-size: 13px;
 }
 
 .solicitud-ubicacion p {
   color: var(--text-secondary);
   margin-bottom: 6px;
+  font-weight: 500;
 }
 
 .ver-mapa-link {
@@ -285,86 +372,101 @@
   font-weight: 600;
   font-size: 13px;
   text-decoration: none;
+  transition: opacity var(--transition);
 }
 
 .ver-mapa-link:hover {
+  opacity: 0.7;
   text-decoration: underline;
 }
 
-/* Urgencia badge */
 .urgencia-badge {
   display: inline-block;
   margin-top: 8px;
   padding: 6px 12px;
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   font-size: 12px;
   font-weight: 700;
-  background: #FEF3C7;
+  background: var(--warning-soft);
   color: #92400E;
 }
 
-/* ============================================
-   FORMULARIO DE CREAR SOLICITUD
-   ============================================ */
-.form-view {
-  max-width: 700px;
-  margin: 0 auto;
-  padding: 32px 24px;
+.mensaje-esperando {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  text-align: center;
+  font-weight: 500;
 }
 
-.form-view h2 {
-  font-size: 22px;
+/* ============================================ */
+/* FORMULARIO DE CREAR SOLICITUD                 */
+/* ============================================ */
+.form-view {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.form-view > h2 {
+  font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
   text-align: center;
   margin-bottom: 24px;
+  letter-spacing: -0.02em;
 }
 
 .categorias-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
   margin-bottom: 24px;
 }
 
 .categoria-btn {
-  padding: 16px 12px;
-  background: #FFFFFF;
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
+  padding: 18px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
-  transition: all 0.2s;
+  transition: all var(--transition);
   text-align: center;
+  font-family: inherit;
 }
 
 .categoria-btn:hover {
   border-color: var(--primary);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(35, 47, 114, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .categoria-btn.selected {
   background: var(--primary);
-  color: #FFFFFF;
+  color: var(--text-inverse);
   border-color: var(--primary);
-  box-shadow: 0 4px 12px rgba(35, 47, 114, 0.3);
+  box-shadow: var(--shadow-primary);
 }
 
 .form-container {
-  background: #FFFFFF;
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-xl);
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-sm);
 }
 
 .form-container h3 {
   font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  letter-spacing: -0.02em;
 }
 
 .form-container textarea,
@@ -372,13 +474,13 @@
 .form-container input[type="text"] {
   width: 100%;
   padding: 14px 16px;
-  background: #FFFFFF;
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   font-size: 15px;
   color: var(--text-primary);
   outline: none;
-  transition: all 0.2s;
+  transition: all var(--transition);
   margin-bottom: 12px;
   resize: vertical;
   font-family: inherit;
@@ -404,71 +506,60 @@
 
 .submit-btn,
 .cancel-btn {
-  padding: 14px;
+  padding: 15px;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-weight: 700;
   font-size: 14px;
-  transition: all 0.2s;
+  transition: all var(--transition);
+  font-family: inherit;
 }
 
 .submit-btn {
   background: var(--primary);
-  color: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(35, 47, 114, 0.2);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-primary);
 }
 
 .submit-btn:hover {
   background: var(--primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(35, 47, 114, 0.3);
+  box-shadow: 0 8px 24px rgba(35, 47, 114, 0.25);
 }
 
 .cancel-btn {
   background: var(--bg-secondary);
   color: var(--text-secondary);
-  border: 1.5px solid var(--border);
+  border: 1px solid var(--border);
 }
 
 .cancel-btn:hover {
-  background: #FEF2F2;
+  background: var(--error-soft);
   color: var(--error);
   border-color: var(--error);
 }
 
-/* ============================================
-   VISTA PROVEEDOR
-   ============================================ */
-.provider-view {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 32px 24px;
-}
-
-.requests-available h2 {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 20px;
-}
-
+/* ============================================ */
+/* OFERTA TÉCNICO                                */
+/* ============================================ */
 .offer-btn {
   width: 100%;
-  padding: 14px;
+  padding: 15px;
   background: var(--primary);
-  color: #FFFFFF;
+  color: var(--text-inverse);
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-weight: 700;
   font-size: 14px;
   margin-top: 12px;
-  transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(35, 47, 114, 0.2);
+  transition: all var(--transition);
+  box-shadow: var(--shadow-primary);
 }
 
 .offer-btn:hover {
   background: var(--primary-hover);
   transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(35, 47, 114, 0.25);
 }
 
 .offer-form {
@@ -479,37 +570,24 @@
 }
 
 .offer-form input {
-  padding: 12px 14px;
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
-  font-size: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 15px;
   color: var(--text-primary);
   outline: none;
+  transition: all var(--transition);
+  font-family: inherit;
 }
 
 .offer-form input:focus {
   border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(35, 47, 114, 0.08);
 }
 
-.offer-status {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 12px;
-  padding: 12px;
-  background: #F0FDF4;
-  border-radius: 10px;
-  font-size: 13px;
-}
-
-.offer-status p {
-  color: var(--success);
-  font-weight: 600;
-}
-
-/* ============================================
-   BOTONES DE ACCIÓN (pago, chat, completar)
-   ============================================ */
+/* ============================================ */
+/* BOTONES DE ACCIÓN                             */
+/* ============================================ */
 .action-buttons {
   display: flex;
   gap: 10px;
@@ -522,29 +600,32 @@
 .chat-btn,
 .accept-btn,
 .back-btn {
-  padding: 12px 18px;
+  padding: 13px 20px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font-weight: 700;
   font-size: 13px;
-  transition: all 0.2s;
+  transition: all var(--transition);
   flex: 1;
   min-width: 120px;
+  font-family: inherit;
 }
 
 .pay-btn {
   background: var(--success);
-  color: #FFFFFF;
+  color: var(--text-inverse);
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.2);
 }
 
 .pay-btn:hover {
   background: #16A34A;
   transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.3);
 }
 
 .complete-btn {
   background: var(--primary);
-  color: #FFFFFF;
+  color: var(--text-inverse);
 }
 
 .complete-btn:hover {
@@ -553,19 +634,19 @@
 }
 
 .chat-btn {
-  background: var(--bg-secondary);
+  background: var(--bg-card);
   color: var(--primary);
-  border: 1.5px solid var(--primary);
+  border: 1px solid var(--primary);
 }
 
 .chat-btn:hover {
   background: var(--primary);
-  color: #FFFFFF;
+  color: var(--text-inverse);
 }
 
 .accept-btn {
   background: var(--success);
-  color: #FFFFFF;
+  color: var(--text-inverse);
 }
 
 .accept-btn:hover {
@@ -575,9 +656,10 @@
 .back-btn {
   background: transparent;
   color: var(--text-secondary);
-  border: 1.5px solid var(--border);
-  max-width: 120px;
+  border: 1px solid var(--border);
+  max-width: 140px;
   margin-bottom: 16px;
+  flex: none;
 }
 
 .back-btn:hover {
@@ -585,21 +667,21 @@
   color: var(--primary);
 }
 
-/* ============================================
-   CHAT
-   ============================================ */
+/* ============================================ */
+/* CHAT                                          */
+/* ============================================ */
 .chat-view {
-  max-width: 700px;
+  max-width: 640px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 24px 16px;
 }
 
 .chat-container {
-  background: #FFFFFF;
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-xl);
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-sm);
 }
 
 .chat-container h2 {
@@ -607,8 +689,9 @@
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-soft);
+  letter-spacing: -0.01em;
 }
 
 .messages-list {
@@ -623,23 +706,24 @@
 
 .message {
   padding: 12px 16px;
-  border-radius: 12px;
-  max-width: 75%;
+  border-radius: var(--radius-lg);
+  max-width: 78%;
   font-size: 14px;
+  line-height: 1.5;
 }
 
 .message.mine {
   align-self: flex-end;
   background: var(--primary);
-  color: #FFFFFF;
-  border-bottom-right-radius: 4px;
+  color: var(--text-inverse);
+  border-bottom-right-radius: 6px;
 }
 
 .message.other {
   align-self: flex-start;
   background: var(--bg-secondary);
   color: var(--text-primary);
-  border-bottom-left-radius: 4px;
+  border-bottom-left-radius: 6px;
 }
 
 .message-sender {
@@ -657,50 +741,60 @@
   display: flex;
   gap: 10px;
   padding-top: 16px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-soft);
 }
 
 .message-input input {
   flex: 1;
-  padding: 12px 16px;
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
+  padding: 13px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
   font-size: 14px;
   color: var(--text-primary);
   outline: none;
+  transition: all var(--transition);
+  font-family: inherit;
 }
 
 .message-input input:focus {
   border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(35, 47, 114, 0.08);
 }
 
 .message-input button {
-  padding: 12px 20px;
+  padding: 13px 22px;
   background: var(--primary);
-  color: #FFFFFF;
+  color: var(--text-inverse);
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-full);
   font-weight: 700;
   font-size: 13px;
-  transition: all 0.2s;
+  transition: all var(--transition);
+  font-family: inherit;
 }
 
 .message-input button:hover {
   background: var(--primary-hover);
+  transform: translateY(-1px);
 }
 
-/* ============================================
-   RESPONSIVE
-   ============================================ */
+/* ============================================ */
+/* RESPONSIVE MÓVIL                              */
+/* ============================================ */
 @media (max-width: 640px) {
   .header {
     padding: 12px 16px;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
   }
 
-  .header h1 {
-    font-size: 20px;
+  .header-logo {
+    font-size: 18px;
+  }
+
+  .header-logo svg {
+    width: 24px;
+    height: 24px;
   }
 
   .user-section {
@@ -709,19 +803,40 @@
     gap: 8px;
   }
 
-  .user-section > span {
+  .user-email {
     display: none;
   }
 
+  .user-type-toggle button {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .logout-btn {
+    padding: 6px 14px;
+    font-size: 12px;
+  }
+
   .home-view,
-  .form-view,
   .provider-view,
+  .form-view,
   .chat-view {
-    padding: 16px;
+    padding: 16px 12px;
+  }
+
+  .section {
+    padding: 18px;
+    border-radius: var(--radius-lg);
   }
 
   .categorias-grid {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .categoria-btn {
+    padding: 16px 8px;
+    font-size: 13px;
   }
 
   .form-buttons {
@@ -738,4 +853,53 @@
   .accept-btn {
     width: 100%;
   }
+
+  .message {
+    max-width: 85%;
+  }
+
+  .notification {
+    top: 70px;
+    right: 12px;
+    left: 12px;
+    max-width: none;
+  }
+
+  h1 { font-size: 24px; }
+  h2 { font-size: 20px; }
+  h3 { font-size: 18px; }
+}
+
+@media (max-width: 380px) {
+  .categorias-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================ */
+/* ANIMACIONES SUAVES                            */
+/* ============================================ */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.request-card,
+.section,
+.form-container {
+  animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+button {
+  transition: all var(--transition);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.98);
 }

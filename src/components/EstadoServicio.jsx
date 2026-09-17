@@ -13,6 +13,7 @@ const ESTADOS_FLUJO = [
     siguiente: 'en_camino',
     siguienteLabel: '🚗 Marcar "En camino"',
     accionTecnico: true,
+    requierePago: true, // ⭐ El cliente debe pagar antes de continuar
   },
   {
     key: 'en_camino',
@@ -40,13 +41,13 @@ const ESTADOS_FLUJO = [
     siguiente: 'trabajo_terminado',
     siguienteLabel: '📷 Subir evidencia y terminar',
     accionTecnico: true,
-    requiereEvidencia: true,  // ⭐ Abre el modal de evidencia
+    requiereEvidencia: true,
   },
   {
     key: 'trabajo_terminado',
     label: 'Trabajo terminado',
     icon: '🎯',
-    descripcion: 'El técnico finalizó el trabajo',
+    descripcion: 'Revisa la evidencia y confirma para liberar el pago',
     siguiente: 'completado',
     siguienteLabel: '✅ Confirmar y liberar pago',
     accionTecnico: false,
@@ -71,7 +72,6 @@ export default function EstadoServicio({ request, userType, onUpdate }) {
   const avanzarEstado = async () => {
     if (!estadoInfo?.siguiente) return;
 
-    // Si requiere evidencia, abrir el modal en lugar de avanzar
     if (estadoInfo.requiereEvidencia) {
       setMostrarEvidencia(true);
       return;
@@ -91,10 +91,24 @@ export default function EstadoServicio({ request, userType, onUpdate }) {
     }
   };
 
+  // ¿Puede avanzar?
   const puedeAvanzar =
     estadoInfo?.siguiente &&
     ((userType === 'tecnico' && estadoInfo.accionTecnico) ||
      (userType === 'cliente' && estadoInfo.accionCliente));
+
+  // ⭐ FIX BUG 1: Si el técnico está en "precio_acordado" pero el cliente NO ha pagado,
+  // NO puede avanzar. Debe esperar al pago.
+  const bloqueadoPorPago =
+    userType === 'tecnico' &&
+    estadoActual === 'precio_acordado' &&
+    !request.paymentDate;
+
+  // ¿Cliente sin pagar en trabajo_terminado?
+  const clienteDebePagar =
+    userType === 'cliente' &&
+    estadoActual === 'trabajo_terminado' &&
+    !request.paymentDate;
 
   const mostrarTimeline = !['negociando', 'pendiente'].includes(estadoActual);
 
@@ -149,8 +163,8 @@ export default function EstadoServicio({ request, userType, onUpdate }) {
           })}
         </div>
 
-        {/* Evidencia visible para el cliente cuando ya fue subida */}
-        {request.evidencia && (userType === 'cliente' || estadoActual === 'completado') && (
+        {/* Evidencia visible cuando ya fue subida */}
+        {request.evidencia && (
           <div className="evidencia-mostrada">
             <h5>📷 Evidencia del trabajo</h5>
             <div className="evidencia-mostrada-fotos">
@@ -171,13 +185,29 @@ export default function EstadoServicio({ request, userType, onUpdate }) {
           </div>
         )}
 
-        {puedeAvanzar && (
+        {/* ⭐ Aviso al técnico: no puede avanzar sin pago */}
+        {bloqueadoPorPago && (
+          <p className="estado-esperando">
+            ⏳ Esperando que el cliente realice el pago para continuar...
+          </p>
+        )}
+
+        {/* ⭐ Aviso al cliente: debe pagar antes de confirmar */}
+        {clienteDebePagar && (
+          <p className="estado-esperando">
+            ⚠️ Aún no has pagado el servicio. Contacta a soporte.
+          </p>
+        )}
+
+        {/* Botón de avanzar */}
+        {puedeAvanzar && !bloqueadoPorPago && !clienteDebePagar && (
           <button className="estado-avanzar-btn" onClick={avanzarEstado}>
             {estadoInfo.siguienteLabel}
           </button>
         )}
 
-        {!puedeAvanzar && estadoActual !== 'completado' && (
+        {/* Mensajes de espera */}
+        {!puedeAvanzar && estadoActual !== 'completado' && !bloqueadoPorPago && !clienteDebePagar && (
           <p className="estado-esperando">
             {userType === 'tecnico'
               ? '⏳ Esperando al cliente...'

@@ -4,46 +4,62 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: linear-gradient(135deg, #F8FAFC 0%, #E0E7FF 100%);
+  background: linear-gradient(180deg, #FFFFFF 0%, #F5F5F7 100%);
 }
 
 .login-card {
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
   background: #FFFFFF;
-  border-radius: 20px;
-  padding: 40px 32px;
-  box-shadow: 0 20px 40px rgba(35, 47, 114, 0.1);
+  border-radius: 24px;
+  padding: 48px 36px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--border-soft);
 }
 
 .login-logo {
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
+}
+
+.login-logo-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-logo-icon svg {
+  width: 64px;
+  height: 64px;
 }
 
 .login-logo h1 {
-  font-size: 40px;
+  font-size: 36px;
   font-weight: 800;
   color: var(--primary);
-  letter-spacing: -1px;
-  margin-bottom: 4px;
+  letter-spacing: -1.2px;
+  margin-bottom: 6px;
 }
 
 .login-logo p {
   font-size: 13px;
   color: var(--text-secondary);
   font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
 /* Selector Técnico / Cliente */
 .tipo-selector {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 4px;
   background: var(--bg-secondary);
-  padding: 6px;
-  border-radius: 14px;
-  margin-bottom: 24px;
+  padding: 4px;
+  border-radius: var(--radius-full);
+  margin-bottom: 28px;
 }
 
 .tipo-btn {
@@ -51,20 +67,22 @@
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  border-radius: 10px;
+  border-radius: var(--radius-full);
   font-weight: 600;
   font-size: 14px;
-  transition: all 0.2s ease;
+  transition: all var(--transition);
+  font-family: inherit;
 }
 
 .tipo-btn.active {
   background: var(--primary);
-  color: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(35, 47, 114, 0.25);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-primary);
 }
 
 .tipo-btn:hover:not(.active) {
-  background: #FFFFFF;
+  background: rgba(35, 47, 114, 0.05);
+  color: var(--primary);
 }
 
 /* Título */
@@ -72,13 +90,14 @@
   font-size: 22px;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   text-align: center;
+  letter-spacing: -0.02em;
 }
 
 .login-subtitle {
   color: var(--primary);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* Formulario */
@@ -90,14 +109,15 @@
 
 .login-input {
   width: 100%;
-  padding: 14px 16px;
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
+  padding: 15px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   background: #FFFFFF;
   font-size: 15px;
   color: var(--text-primary);
   outline: none;
-  transition: all 0.2s ease;
+  transition: all var(--transition);
+  font-family: inherit;
 }
 
 .login-input:focus {
@@ -110,33 +130,35 @@
 }
 
 .login-error {
-  padding: 10px 14px;
-  background: #FEF2F2;
+  padding: 12px 16px;
+  background: var(--error-soft);
   border: 1px solid #FECACA;
   color: var(--error);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font-size: 13px;
+  font-weight: 500;
 }
 
 /* Botón principal */
 .login-btn-primary {
   width: 100%;
-  padding: 14px;
+  padding: 15px;
   background: var(--primary);
-  color: #FFFFFF;
+  color: var(--text-inverse);
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-weight: 700;
   font-size: 15px;
   margin-top: 4px;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(35, 47, 114, 0.2);
+  transition: all var(--transition);
+  box-shadow: var(--shadow-primary);
+  font-family: inherit;
 }
 
 .login-btn-primary:hover:not(:disabled) {
   background: var(--primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(35, 47, 114, 0.3);
+  box-shadow: 0 8px 24px rgba(35, 47, 114, 0.25);
 }
 
 .login-btn-primary:disabled {
@@ -162,16 +184,17 @@
 }
 
 .login-divider span {
-  padding: 0 12px;
+  padding: 0 14px;
+  font-weight: 500;
 }
 
 /* Botón Google */
 .login-btn-google {
   width: 100%;
-  padding: 13px;
+  padding: 14px;
   background: #FFFFFF;
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   font-weight: 600;
   font-size: 14px;
   color: var(--text-primary);
@@ -179,12 +202,14 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  transition: all 0.2s ease;
+  transition: all var(--transition);
+  font-family: inherit;
 }
 
 .login-btn-google:hover:not(:disabled) {
   background: var(--bg-secondary);
   border-color: var(--text-tertiary);
+  transform: translateY(-1px);
 }
 
 .login-btn-google:disabled {
@@ -194,7 +219,7 @@
 
 /* Toggle login/registro */
 .login-toggle {
-  margin-top: 20px;
+  margin-top: 24px;
   text-align: center;
   font-size: 14px;
   color: var(--text-secondary);
@@ -207,8 +232,30 @@
   font-weight: 700;
   margin-left: 6px;
   font-size: 14px;
+  font-family: inherit;
 }
 
 .login-toggle-btn:hover {
   text-decoration: underline;
+}
+
+/* Responsive móvil */
+@media (max-width: 480px) {
+  .login-card {
+    padding: 36px 24px;
+    border-radius: 20px;
+  }
+
+  .login-logo-icon svg {
+    width: 52px;
+    height: 52px;
+  }
+
+  .login-logo h1 {
+    font-size: 30px;
+  }
+
+  .login-title {
+    font-size: 19px;
+  }
 }
