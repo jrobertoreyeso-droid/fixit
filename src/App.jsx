@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import {
   Zap,
@@ -23,16 +24,16 @@ import {
   getSesion,
   logout,
   getSolicitudes,
+  getMisSolicitudes,
   crearSolicitud,
   actualizarSolicitud,
-  getChats,
+  getChatsDeUsuario,
   crearChat,
   actualizarChat,
   getUsuarios,
   actualizarUsuario,
   calcularDesglose
 } from './db';
-import { seedInitialData } from './utils/seed';
 import Login from './pages/Login';
 import MapaUbicacion from './components/MapaUbicacion';
 import SelectorUrgencia from './components/SelectorUrgencia';
@@ -77,8 +78,6 @@ function getCategoriaInfo(categoryValue) {
 }
 
 function App() {
-  seedInitialData();
-
   const [user, setUser] = useState(null);
   const [userType, setUserType] = useState(null);
   const [perfilUsuario, setPerfilUsuario] = useState(null);
@@ -128,38 +127,45 @@ function App() {
     setTimeout(() => setNotification(''), 3000);
   };
 
-  const loadMyRequests = () => {
+  const loadMyRequests = async () => {
     if (!user) return;
-    const todas = getSolicitudes();
-    const mias = todas.filter(s => s.userId === user.id);
-    setRequests(mias);
+    try {
+      const mias = await getMisSolicitudes(user.id);
+      setRequests(mias);
+    } catch (error) {
+      console.error('Error cargando solicitudes:', error);
+    }
   };
 
-  const loadAvailableRequests = () => {
+  const loadAvailableRequests = async () => {
     if (!user) return;
-    const todas = getSolicitudes();
-
-    const activas = todas.filter(s =>
-      ESTADOS_ACTIVOS.includes(s.status) ||
-      s.status === 'pendiente' ||
-      s.status === 'negociando' ||
-      s.status === 'precio_acordado'
-    );
-
-    const mias = todas.filter(s => s.tecnicoSeleccionado?.uid === user.id);
-
-    const unificadas = Array.from(new Map([...activas, ...mias].map(s => [s.id, s])).values());
-    setAllRequests(unificadas);
+    try {
+      const todas = await getSolicitudes();
+      const activas = todas.filter(s =>
+        ESTADOS_ACTIVOS.includes(s.status) ||
+        s.status === 'pendiente' ||
+        s.status === 'negociando' ||
+        s.status === 'precio_acordado'
+      );
+      const mias = todas.filter(s => s.tecnicoSeleccionado?.uid === user.id);
+      const unificadas = Array.from(new Map([...activas, ...mias].map(s => [s.id, s])).values());
+      setAllRequests(unificadas);
+    } catch (error) {
+      console.error('Error cargando solicitudes disponibles:', error);
+    }
   };
 
-  const loadChats = () => {
+  const loadChats = async () => {
     if (!user) return;
-    const todos = getChats();
-    const mios = todos.filter(c => c.participants?.includes(user.email));
-    setChats(mios);
+    try {
+      const mios = await getChatsDeUsuario(user.email);
+      setChats(mios);
+    } catch (error) {
+      console.error('Error cargando chats:', error);
+    }
   };
 
-  const handleCreateRequest = () => {
+  const handleCreateRequest = async () => {
     if (!description || !budget || !selectedCategory) {
       alert('Completa todos los campos');
       return;
@@ -172,7 +178,7 @@ function App() {
     const desglose = calcularDesglose(parseFloat(budget), urgencia);
 
     try {
-      crearSolicitud({
+      await crearSolicitud({
         userId: user.id,
         userEmail: user.email,
         userName: user.nombre,
@@ -195,13 +201,13 @@ function App() {
       setUbicacion(null);
       setUrgencia('normal');
       setView('home');
-      loadMyRequests();
+      await loadMyRequests();
     } catch (error) {
       showNotification('Error: ' + error.message);
     }
   };
 
-  const handleMakeOffer = () => {
+  const handleMakeOffer = async () => {
     if (!offerPrice) {
       alert('Ingresa un precio');
       return;
@@ -221,7 +227,7 @@ function App() {
 
       const negotiationActual = selectedRequest.negotiation || [];
 
-      actualizarSolicitud(selectedRequest.id, {
+      await actualizarSolicitud(selectedRequest.id, {
         negotiation: [...negotiationActual, nuevaOferta],
         status: 'negociando',
         tecnicoSeleccionado: {
@@ -231,7 +237,7 @@ function App() {
         },
       });
 
-      crearChat({
+      await crearChat({
         chatId: `${selectedRequest.id}-${user.id}`,
         solicitudId: selectedRequest.id,
         participants: [selectedRequest.userEmail, user.email],
@@ -245,14 +251,14 @@ function App() {
       showNotification('Oferta enviada');
       setOfferPrice('');
       setSelectedRequest(null);
-      loadAvailableRequests();
-      loadChats();
+      await loadAvailableRequests();
+      await loadChats();
     } catch (error) {
       showNotification('Error: ' + error.message);
     }
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!chatMessage.trim() || !selectedChat) return;
     try {
       const nuevoMensaje = {
@@ -260,30 +266,31 @@ function App() {
         text: chatMessage,
         timestamp: new Date().toISOString()
       };
-      actualizarChat(selectedChat.id, {
+      await actualizarChat(selectedChat.id, {
         messages: [...(selectedChat.messages || []), nuevoMensaje]
       });
       setChatMessage('');
-      loadChats();
+      await loadChats();
     } catch (error) {
       console.error('Error sending message:', error);
     }
   };
 
-  const handlePayment = (requestId) => {
+  const handlePayment = async (requestId) => {
     try {
       alert('Procesando pago simulado...\n\nPago completado exitosamente!\n\nNo se procesó dinero real (SIMULACIÓN)');
-      const sol = getSolicitudes().find(s => s.id === requestId);
-      actualizarSolicitud(requestId, {
+      const todas = await getSolicitudes();
+      const sol = todas.find(s => s.id === requestId);
+      await actualizarSolicitud(requestId, {
         status: 'pagado',
         paymentDate: new Date().toISOString(),
         timeline: {
-          ...(sol.timeline || {}),
+          ...(sol?.timeline || {}),
           pagado: new Date().toISOString()
         }
       });
       showNotification('Pago registrado');
-      loadMyRequests();
+      await loadMyRequests();
     } catch (error) {
       showNotification('Error: ' + error.message);
     }
@@ -296,14 +303,18 @@ function App() {
     setUser(null);
   };
 
-  const handleVerificacionCompleta = () => {
-    const usuarios = getUsuarios();
-    const actual = usuarios.find(u => u.id === user.id);
-    if (actual) {
-      setUser({ ...actual });
-      setPerfilUsuario({ ...actual });
+  const handleVerificacionCompleta = async () => {
+    try {
+      const usuarios = await getUsuarios();
+      const actual = usuarios.find(u => u.id === user.id);
+      if (actual) {
+        setUser({ ...actual });
+        setPerfilUsuario({ ...actual });
+      }
+      showNotification('Verificación enviada. Estamos revisando tu DPI.');
+    } catch (error) {
+      console.error('Error:', error);
     }
-    showNotification('Verificación enviada. Estamos revisando tu DPI.');
   };
 
   const clasificarSolicitudes = (lista) => {
@@ -314,16 +325,11 @@ function App() {
     };
   };
 
-  // TEMPORAL: sin filtro de distancia para debug
-  const procesarSolicitudesTecnico = (lista) => {
-    return lista;
-  };
-
   if (loading) return <div className="loading">Cargando...</div>;
   if (!user) return <Login setUserType={setUserType} setUser={setUser} />;
 
   const solicitudesCliente = clasificarSolicitudes(requests);
-  const solicitudesTecnico = clasificarSolicitudes(procesarSolicitudesTecnico(allRequests));
+  const solicitudesTecnico = clasificarSolicitudes(allRequests);
 
   return (
     <div className="app-container">

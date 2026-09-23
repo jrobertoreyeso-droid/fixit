@@ -24,7 +24,7 @@ export default function Login({ setUserType, setUser }) {
     setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setCargando(true);
@@ -38,11 +38,11 @@ export default function Login({ setUserType, setUser }) {
           throw new Error('La contraseña debe tener al menos 6 caracteres');
         }
 
-        const user = register({ email, password, nombre, telefono, tipo });
+        const user = await register({ email, password, nombre, telefono, tipo });
         if (setUser) setUser(user);
         setUserType(user.tipo);
       } else {
-        const user = login(email, password);
+        const user = await login(email, password);
 
         if (user.tipo !== tipo) {
           logout();

@@ -1,216 +1,124 @@
-/**
- * Sistema de persistencia local para FixIt
- * Maneja el almacenamiento de datos en localStorage para eliminar la dependencia de backend.
- */
-
-// Configuración de negocio para el cálculo de comisiones y recargos
+// Configuraciones de negocio fijas
 export const CONFIG_NEGOCIO = {
-  comisionFixit: 0.15,
-  recargoProgramado: 15,
-  recargoPocoUrgente: 20,
-  recargoMuyUrgente: 25,
+  recargoProgramado: 5.0,
+  recargoPocoUrgente: 10.0,
+  recargoMuyUrgente: 25.0,
 };
 
-// Claves de localStorage
-const KEYS = {
-  USUARIOS: 'fixit_usuarios',
-  SESION: 'fixit_sesion',
-  SOLICITUDES: 'fixit_solicitudes',
-  CHATS: 'fixit_chats',
-};
+export function calcularDesglose(presupuesto, urgencia) {
+  const recargo = CONFIG_NEGOCIO[urgencia === 'normal' ? 'recargoProgramado' : `recargo${urgencia.charAt(0).toUpperCase() + urgencia.slice(1)}`] || 0;
+  const subtotal = presupuesto;
+  const impuesto = subtotal * 0.12;
+  const total = subtotal + impuesto + recargo;
+  return { subtotal, impuesto, recargo, total };
+}
 
-// --- FUNCIONES DE PERSISTENCIA BÁSICA ---
-
-export const getUsuarios = () => {
-  const data = localStorage.getItem(KEYS.USUARIOS);
-  return data ? JSON.parse(data) : [];
-};
-
-export const saveUsuarios = (usuarios) => {
-  localStorage.setItem(KEYS.USUARIOS, JSON.stringify(usuarios));
-};
-
-export const getSesion = () => {
-  const data = localStorage.getItem(KEYS.SESION);
+// Gestión de sesión local (localStorage)
+export function getSesion() {
+  const data = localStorage.getItem('fixit_sesion');
   return data ? JSON.parse(data) : null;
-};
+}
 
-export const saveSesion = (user) => {
-  localStorage.setItem(KEYS.SESION, JSON.stringify(user));
-};
+export function saveSesion(user) {
+  localStorage.setItem('fixit_sesion', JSON.stringify(user));
+}
 
-export const clearSesion = () => {
-  localStorage.removeItem(KEYS.SESION);
-};
+export function clearSesion() {
+  localStorage.removeItem('fixit_sesion');
+}
 
-export const getSolicitudes = () => {
-  const data = localStorage.getItem(KEYS.SOLICITUDES);
-  return data ? JSON.parse(data) : [];
-};
+// Helper para llamadas API
+async function apiCall(url, options = {}) {
+  const res = await fetch(url, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error de red');
+  return data;
+}
 
-export const saveSolicitudes = (solicitudes) => {
-  localStorage.setItem(KEYS.SOLICITUDES, JSON.stringify(solicitudes));
-};
+// Operaciones de Usuarios
+export async function getUsuarios() {
+  return await apiCall('/api/usuarios');
+}
 
-export const getChats = () => {
-  const data = localStorage.getItem(KEYS.CHATS);
-  return data ? JSON.parse(data) : [];
-};
+export async function getUsuario(id) {
+  return await apiCall(`/api/usuarios/${id}`);
+}
 
-export const saveChats = (chats) => {
-  localStorage.setItem(KEYS.CHATS, JSON.stringify(chats));
-};
-
-// --- LÓGICA DE AUTENTICACIÓN ---
-
-export const login = (email, password) => {
-  const usuarios = getUsuarios();
-  const user = usuarios.find(u => u.email === email && u.password === password);
-
-  if (!user) {
-    throw new Error('El correo o la contraseña son incorrectos');
-  }
-
+export async function register(userData) {
+  const user = await apiCall('/api/register', {
+    method: 'POST',
+    body: userData,
+  });
   saveSesion(user);
   return user;
-};
+}
 
-export const register = ({ email, password, nombre, telefono, tipo }) => {
-  const usuarios = getUsuarios();
+export async function login(email, password) {
+  const user = await apiCall('/api/login', {
+    method: 'POST',
+    body: { email, password },
+  });
+  saveSesion(user);
+  return user;
+}
 
-  if (usuarios.find(u => u.email === email)) {
-    throw new Error('Este correo ya está registrado');
-  }
+export async function actualizarUsuario(id, updates) {
+  return await apiCall(`/api/usuarios/${id}`, {
+    method: 'PUT',
+    body: updates,
+  });
+}
 
-  const nuevoUsuario = {
-    id: `user-${Date.now()}`,
-    email,
-    password,
-    nombre,
-    telefono,
-    tipo,
-    verificado: tipo === 'cliente', // Clientes se consideran verificados por defecto
-    estado_verificacion: tipo === 'cliente' ? 'aprobado' : 'sin_verificar',
-    createdAt: new Date().toISOString(),
-  };
-
-  usuarios.push(nuevoUsuario);
-  saveUsuarios(usuarios);
-  saveSesion(nuevoUsuario);
-
-  return nuevoUsuario;
-};
-
-export const logout = () => {
+export function logout() {
   clearSesion();
-};
+}
 
-// --- GESTIÓN DE DATOS ---
+// Operaciones de Solicitudes
+export async function getSolicitudes() {
+  return await apiCall('/api/solicitudes');
+}
 
-export const crearSolicitud = (solicitud) => {
-  const solicitudes = getSolicitudes();
-  const nuevaSolicitud = {
-    ...solicitud,
-    id: `req-${Date.now()}`,
-    createdAt: new Date().toISOString(),
-    status: solicitud.status || 'pendiente',
-    negotiation: solicitud.negotiation || [],
-    timeline: solicitud.timeline || {},
-    offers: solicitud.offers || [],
-    messages: solicitud.messages || [],
-  };
+export async function getMisSolicitudes(userId) {
+  return await apiCall(`/api/solicitudes/mias/${userId}`);
+}
 
-  solicitudes.push(nuevaSolicitud);
-  saveSolicitudes(solicitudes);
-  return nuevaSolicitud;
-};
+export async function crearSolicitud(requestData) {
+  return await apiCall('/api/solicitudes', {
+    method: 'POST',
+    body: requestData,
+  });
+}
 
-export const actualizarSolicitud = (id, cambios) => {
-  const solicitudes = getSolicitudes();
-  const index = solicitudes.findIndex(s => s.id === id);
+export async function actualizarSolicitud(id, updates) {
+  return await apiCall(`/api/solicitudes/${id}`, {
+    method: 'PUT',
+    body: updates,
+  });
+}
 
-  if (index === -1) {
-    throw new Error('No se encontró la solicitud');
-  }
+// Operaciones de Chats
+export async function getChats() {
+  return await apiCall('/api/chats');
+}
 
-  solicitudes[index] = { ...solicitudes[index], ...cambios };
-  saveSolicitudes(solicitudes);
-  return solicitudes[index];
-};
+export async function getChatsDeUsuario(email) {
+  return await apiCall(`/api/chats/participante/${email}`);
+}
 
-export const actualizarUsuario = (id, cambios) => {
-  const usuarios = getUsuarios();
-  const index = usuarios.findIndex(u => u.id === id);
+export async function crearChat(chatData) {
+  return await apiCall('/api/chats', {
+    method: 'POST',
+    body: chatData,
+  });
+}
 
-  if (index === -1) {
-    throw new Error('No se encontró el usuario');
-  }
-
-  usuarios[index] = { ...usuarios[index], ...cambios };
-  saveUsuarios(usuarios);
-  return usuarios[index];
-};
-
-export const crearChat = (chat) => {
-  const chats = getChats();
-  const nuevoChat = {
-    ...chat,
-    id: `chat-${Date.now()}`,
-    createdAt: new Date().toISOString(),
-    messages: chat.messages || [],
-  };
-
-  chats.push(nuevoChat);
-  saveChats(chats);
-  return nuevoChat;
-};
-
-export const actualizarChat = (id, cambios) => {
-  const chats = getChats();
-  const index = chats.findIndex(c => c.id === id);
-
-  if (index === -1) {
-    throw new Error('No se encontró el chat');
-  }
-
-  chats[index] = { ...chats[index], ...cambios };
-  saveChats(chats);
-  return chats[index];
-};
-
-// --- UTILIDADES DE NEGOCIO ---
-
-export const calcularDesglose = (precioBase, tipoUrgencia = 'normal') => {
-  const comisionBase = precioBase * CONFIG_NEGOCIO.comisionFixit;
-  const tecnicoBase = precioBase - comisionBase;
-
-  let recargo = 0;
-  let fixitRecargo = 0;
-  let tecnicoRecargo = 0;
-
-  if (tipoUrgencia === 'programado') {
-    recargo = CONFIG_NEGOCIO.recargoProgramado;
-    fixitRecargo = 5;
-    tecnicoRecargo = 10;
-  } else if (tipoUrgencia === 'poco_urgente') {
-    recargo = CONFIG_NEGOCIO.recargoPocoUrgente;
-    fixitRecargo = 7;
-    tecnicoRecargo = 13;
-  } else if (tipoUrgencia === 'muy_urgente') {
-    recargo = CONFIG_NEGOCIO.recargoMuyUrgente;
-    fixitRecargo = 10;
-    tecnicoRecargo = 15;
-  }
-
-  return {
-    precioBase,
-    recargo,
-    totalCliente: precioBase + recargo,
-    fixitTotal: comisionBase + fixitRecargo,
-    tecnicoTotal: tecnicoBase + tecnicoRecargo,
-    comisionBase,
-    tecnicoBase,
-    fixitRecargo,
-    tecnicoRecargo,
-  };
-};
+export async function actualizarChat(id, updates) {
+  return await apiCall(`/api/chats/${id}`, {
+    method: 'PUT',
+    body: updates,
+  });
+}

@@ -37,3 +37,4 @@ ui-debug.log
 *.backup3
 *.backup4
 src/*.backup*
+config.yml
