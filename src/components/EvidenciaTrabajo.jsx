@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { doc, updateDoc } from 'firebase/firestore';
 import {
   Camera,
   X,
@@ -9,7 +7,7 @@ import {
   AlertCircle,
   Upload,
 } from 'lucide-react';
-import { db, storage } from '../firebase';
+import { actualizarSolicitud } from '../db';
 import './EvidenciaTrabajo.css';
 
 export default function EvidenciaTrabajo({ request, onClose, onComplete }) {
@@ -17,7 +15,7 @@ export default function EvidenciaTrabajo({ request, onClose, onComplete }) {
   const [previews, setPreviews] = useState([]);
   const [descripcion, setDescripcion] = useState('');
   const [materiales, setMateriales] = useState('');
-  const [precioFinal, setPrecioFinal] = useState(request.precioFinal || '');
+  const [precioFinal, setPrecioFinal] = useState(request.precio_final || request.precioFinal || '');
   const [subiendo, setSubiendo] = useState(false);
   const [error, setError] = useState('');
   const [progreso, setProgreso] = useState(0);
@@ -40,6 +38,18 @@ export default function EvidenciaTrabajo({ request, onClose, onComplete }) {
     setPreviews(nuevosPreviews);
   };
 
+  /**
+   * Convierte un archivo a cadena Base64 para almacenamiento en localStorage
+   */
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
   const handleSubmit = async () => {
     setError('');
 
@@ -59,36 +69,31 @@ export default function EvidenciaTrabajo({ request, onClose, onComplete }) {
       const urlsFotos = [];
 
       for (let i = 0; i < fotos.length; i++) {
-        const foto = fotos[i];
-        const extension = foto.name.split('.').pop();
-        const path = `evidencias/${request.id}/${Date.now()}-${i}.${extension}`;
-        const storageRef = ref(storage, path);
-
-        await uploadBytes(storageRef, foto);
-        const url = await getDownloadURL(storageRef);
-        urlsFotos.push(url);
-
+        const base64 = await fileToBase64(fotos[i]);
+        urlsFotos.push(base64);
         setProgreso(Math.round(((i + 1) / fotos.length) * 100));
       }
 
-      const requestRef = doc(db, 'requests', request.id);
-      await updateDoc(requestRef, {
+      actualizarSolicitud(request.id, {
         status: 'trabajo_terminado',
         evidencia: {
           fotos: urlsFotos,
           descripcion,
           materiales,
-          precioFinal: parseFloat(precioFinal) || request.precioFinal,
-          timestamp: new Date(),
+          precio_final: parseFloat(precioFinal) || request.precio_final || request.precioFinal,
+          timestamp: new Date().toISOString(),
         },
-        [`timeline.trabajo_terminado`]: new Date(),
+        timeline: {
+          ...(request.timeline || {}),
+          trabajo_terminado: new Date().toISOString(),
+        },
       });
 
       if (onComplete) onComplete();
       if (onClose) onClose();
     } catch (err) {
       console.error(err);
-      setError('Error al subir: ' + err.message);
+      setError('Error al procesar las imágenes: ' + err.message);
     } finally {
       setSubiendo(false);
     }
@@ -180,7 +185,7 @@ export default function EvidenciaTrabajo({ request, onClose, onComplete }) {
           {subiendo && (
             <div className="evidencia-progreso">
               <div className="evidencia-progreso-bar" style={{ width: `${progreso}%` }} />
-              <span>Subiendo... {progreso}%</span>
+              <span>Procesando imágenes... {progreso}%</span>
             </div>
           )}
 
@@ -207,7 +212,7 @@ export default function EvidenciaTrabajo({ request, onClose, onComplete }) {
               {subiendo ? (
                 <>
                   <Upload size={16} strokeWidth={2.5} />
-                  <span>Subiendo...</span>
+                  <span>Procesando...</span>
                 </>
               ) : (
                 <>

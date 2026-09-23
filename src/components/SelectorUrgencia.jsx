@@ -1,5 +1,5 @@
 import { Calendar, AlertCircle, AlertTriangle } from 'lucide-react';
-import { CONFIG_NEGOCIO } from '../firebase';
+import { CONFIG_NEGOCIO } from '../db';
 import './SelectorUrgencia.css';
 
 const OPCIONES = [

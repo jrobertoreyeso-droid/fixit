@@ -1,140 +1,115 @@
 .mapa-ubicacion {
-  margin: 16px 0;
-  padding: 16px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-lg);
-}
-
-.mapa-header {
+  padding: 20px;
+  background: #F5F5F7;
+  border-radius: 16px;
   display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border: 1px solid var(--border);
+}
+
+.mapa-ubicacion h3 {
+  display: flex;
+  align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
 }
 
-.mapa-input-wrapper {
-  flex: 1;
-  min-width: 200px;
-  position: relative;
+.campo-direccion,
+.campo-coordenadas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.mapa-input-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-tertiary);
-  pointer-events: none;
-  z-index: 1;
+.campo-direccion label,
+.campo-coordenadas label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .mapa-input {
   width: 100%;
-  padding: 12px 14px 12px 40px;
-  background: #FFFFFF;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  font-size: 14px;
-  outline: none;
-  transition: all var(--transition);
+  padding: 12px 14px;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
   font-family: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  outline: none;
+  transition: all 0.2s;
+  box-sizing: border-box;
 }
 
 .mapa-input:focus {
-  border-color: var(--primary);
+  border-color: #232F72;
   box-shadow: 0 0 0 4px rgba(35, 47, 114, 0.08);
 }
 
-.mapa-input::placeholder {
-  color: var(--text-tertiary);
+.input-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
-.mapa-btn-ubicacion {
+.input-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-secondary);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.input-icon-wrapper .mapa-input {
+  padding-left: 36px;
+}
+
+.campo-coordenadas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.hint {
+  font-size: 12px;
+  color: #9CA3AF;
+  margin: 0;
+}
+
+.btn-ubicacion-actual {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 12px 18px;
-  background: var(--primary);
+  background: #232F72;
   color: #FFFFFF;
   border: none;
-  border-radius: var(--radius-md);
-  font-weight: 700;
+  border-radius: 12px;
   cursor: pointer;
+  font-weight: 700;
   font-size: 14px;
-  transition: all var(--transition);
-  white-space: nowrap;
+  transition: all 0.2s;
   font-family: inherit;
 }
 
-.mapa-btn-ubicacion:hover {
+.btn-ubicacion-actual:hover:not(:disabled) {
   background: var(--primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(35, 47, 114, 0.2);
 }
 
-.mapa-buscando {
-  padding: 8px 12px;
-  background: var(--primary-soft);
-  color: var(--primary);
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  margin-bottom: 8px;
-  font-weight: 500;
-}
-
-.mapa-error-msg {
-  padding: 8px 12px;
-  background: var(--error-soft);
-  color: var(--error);
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  margin-bottom: 8px;
+.btn-ubicacion-actual:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .mapa-error {
-  padding: 24px;
-  text-align: center;
-  color: var(--error);
-  background: var(--error-soft);
-  border: 1px solid #FECACA;
-  border-radius: var(--radius-lg);
-  font-size: 14px;
-}
-
-.mapa-cargando {
-  padding: 24px;
-  text-align: center;
-  color: var(--text-secondary);
-  background: var(--bg-secondary);
-  border-radius: var(--radius-lg);
-  font-size: 14px;
-}
-
-.mapa-direccion {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 12px;
-  padding: 12px 14px;
-  background: #FFFFFF;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.mapa-direccion svg {
-  color: var(--primary);
-  flex-shrink: 0;
-}
-
-.mapa-hint {
-  margin-top: 10px;
-  font-size: 12px;
-  color: var(--text-tertiary);
+  color: #EF4444;
+  font-size: 13px;
+  margin: 0;
   text-align: center;
 }

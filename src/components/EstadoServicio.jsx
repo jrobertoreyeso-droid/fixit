@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { doc, updateDoc } from 'firebase/firestore';
 import {
   Handshake,
   CreditCard,
@@ -12,7 +11,7 @@ import {
   AlertTriangle,
   PartyPopper,
 } from 'lucide-react';
-import { db } from '../firebase';
+import { actualizarSolicitud } from '../db';
 import EvidenciaTrabajo from './EvidenciaTrabajo';
 import './EstadoServicio.css';
 
@@ -21,8 +20,7 @@ const ESTADOS_FLUJO = [
     key: 'precio_acordado',
     label: 'Precio acordado',
     Icon: Handshake,
-    descripcion: 'El precio del servicio fue negociado',
-    // Sin "siguiente": el cliente debe pagar con el botón de pago
+    descripcion: 'El precio del servicio fue negociando',
   },
   {
     key: 'pagado',
@@ -96,10 +94,13 @@ export default function EstadoServicio({ request, userType, onUpdate }) {
     }
 
     try {
-      const requestRef = doc(db, 'requests', request.id);
-      await updateDoc(requestRef, {
+      const timelineActual = request.timeline || {};
+      actualizarSolicitud(request.id, {
         status: estadoInfo.siguiente,
-        [`timeline.${estadoInfo.siguiente}`]: new Date(),
+        timeline: {
+          ...timelineActual,
+          [estadoInfo.siguiente]: new Date().toISOString(),
+        },
       });
 
       if (onUpdate) onUpdate();
@@ -156,9 +157,7 @@ export default function EstadoServicio({ request, userType, onUpdate }) {
                   {esActual && <div className="estado-step-desc">{descripcion}</div>}
                   {timestamp && (
                     <div className="estado-step-hora">
-                      {timestamp.toDate
-                        ? timestamp.toDate().toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })
-                        : new Date(timestamp).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(timestamp).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   )}
                 </div>
@@ -199,7 +198,7 @@ export default function EstadoServicio({ request, userType, onUpdate }) {
           </button>
         )}
 
-        {/* Mensaje de espera — solo si NO es el último paso, NO está pagado y aún no terminó */}
+        {/* Mensaje de espera — solo si NO es el último paso, no está pagado y aún no terminó */}
         {!puedeAvanzar &&
          estadoActual !== 'completado' &&
          estadoActual !== 'precio_acordado' && (
@@ -212,7 +211,7 @@ export default function EstadoServicio({ request, userType, onUpdate }) {
         )}
 
         {/* Mensaje especial si está en precio_acordado y el cliente no ha pagado */}
-        {estadoActual === 'precio_acordado' && !request.paymentDate && (
+        {estadoActual === 'precio_acordado' && !request.payment_date && (
           <div className="estado-esperando">
             <AlertTriangle size={16} strokeWidth={2.5} />
             <span>

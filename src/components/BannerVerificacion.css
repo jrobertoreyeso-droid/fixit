@@ -1,0 +1,147 @@
+/* ===== BANNER PRINCIPAL ===== */
+.banner-verif {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 20px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 20px;
+  border: 1px solid;
+  flex-wrap: wrap;
+}
+
+.banner-sin-verificar {
+  background: var(--warning-soft);
+  border-color: #FCD34D;
+}
+
+.banner-pendiente {
+  background: var(--primary-soft);
+  border-color: #93C5FD;
+}
+
+.banner-rechazado {
+  background: var(--error-soft);
+  border-color: #FECACA;
+}
+
+.banner-verif-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.banner-verif-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.banner-sin-verificar .banner-verif-icon {
+  color: #92400E;
+}
+
+.banner-pendiente .banner-verif-icon {
+  color: var(--primary);
+}
+
+.banner-rechazado .banner-verif-icon {
+  color: var(--error);
+}
+
+.banner-verif-titulo {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.banner-verif-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.banner-verif-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 11px 18px;
+  background: var(--primary);
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 13px;
+  transition: all var(--transition);
+  white-space: nowrap;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: var(--shadow-primary);
+}
+
+.banner-verif-btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(35, 47, 114, 0.25);
+}
+
+/* ===== BADGE COMPACTO ===== */
+.badge-verif {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+
+.badge-verif-ok {
+  background: var(--success-soft);
+  color: #065F46;
+}
+
+.badge-verif-pendiente {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.badge-verif-no {
+  background: var(--warning-soft);
+  color: #92400E;
+}
+
+.badge-verif-large {
+  padding: 6px 14px;
+  font-size: 12px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 480px) {
+  .banner-verif {
+    padding: 14px 16px;
+  }
+
+  .banner-verif-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .banner-verif-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

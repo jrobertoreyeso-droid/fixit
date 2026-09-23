@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { doc, updateDoc } from 'firebase/firestore';
 import {
   MessageSquare,
   CheckCircle2,
@@ -9,7 +8,7 @@ import {
   HardHat,
   TrendingUp,
 } from 'lucide-react';
-import { db, calcularDesglose } from '../firebase';
+import { actualizarSolicitud, calcularDesglose } from '../db';
 import './NegociacionPanel.css';
 
 export default function NegociacionPanel({
@@ -40,9 +39,8 @@ export default function NegociacionPanel({
 
     setProcesando(true);
     try {
-      const requestRef = doc(db, 'requests', request.id);
-
-      const updatedNegotiation = negotiation.map((n, idx) => {
+      // Marcamos la última oferta como aceptada o rechazada según la acción
+      const historialActualizado = negotiation.map((n, idx) => {
         if (idx === negotiation.length - 1) {
           return {
             ...n,
@@ -56,8 +54,8 @@ export default function NegociacionPanel({
         const desglose = calcularDesglose(ultimaOferta.monto, request.urgencia || 'normal');
         const tecnicoSeleccionado = negotiation.find(n => n.by === 'tecnico');
 
-        await updateDoc(requestRef, {
-          negotiation: updatedNegotiation,
+        actualizarSolicitud(request.id, {
+          negotiation: historialActualizado,
           status: 'precio_acordado',
           precioFinal: ultimaOferta.monto,
           desglose,
@@ -71,17 +69,17 @@ export default function NegociacionPanel({
         const nuevaOferta = {
           id: `msg-${Date.now()}`,
           by: userType,
-          byUid: currentUser.uid,
+          byUid: currentUser.id,
           byEmail: currentUser.email,
-          byName: currentUser.displayName || currentUser.email?.split('@')[0],
+          byName: currentUser.nombre || currentUser.email?.split('@')[0],
           type: 'contraoferta',
           monto: montoNum,
           status: 'pendiente',
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
         };
 
-        await updateDoc(requestRef, {
-          negotiation: [...updatedNegotiation, nuevaOferta],
+        actualizarSolicitud(request.id, {
+          negotiation: [...historialActualizado, nuevaOferta],
         });
         setMonto('');
       }
@@ -99,16 +97,15 @@ export default function NegociacionPanel({
     setError('');
     setProcesando(true);
     try {
-      const requestRef = doc(db, 'requests', request.id);
-      const updatedNegotiation = negotiation.map((n, idx) => {
+      const historialActualizado = negotiation.map((n, idx) => {
         if (idx === negotiation.length - 1) {
           return { ...n, status: 'rechazada' };
         }
         return n;
       });
 
-      await updateDoc(requestRef, {
-        negotiation: updatedNegotiation,
+      actualizarSolicitud(request.id, {
+        negotiation: historialActualizado,
         status: 'rechazado',
       });
 
@@ -150,9 +147,7 @@ export default function NegociacionPanel({
                   <span>{msg.byName || getNombreCorto(msg.byEmail)}</span>
                 </strong>
                 <span className="negociacion-msg-hora">
-                  {msg.timestamp?.toDate
-                    ? msg.timestamp.toDate().toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })
-                    : new Date(msg.timestamp).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(msg.timestamp).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
               <div className="negociacion-msg-monto">Q{msg.monto}</div>
@@ -185,7 +180,7 @@ export default function NegociacionPanel({
         <div className="negociacion-acordado">
           <p>
             <CheckCircle2 size={18} strokeWidth={2.5} />
-            <strong>Precio acordado: Q{request.precioFinal}</strong>
+            <strong>Precio acordado: Q{request.precioFinal || request.precio_final}</strong>
           </p>
           {request.desglose && (
             <div className="negociacion-desglose">

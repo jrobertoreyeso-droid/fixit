@@ -1,8 +1,4 @@
 import { useState, useEffect } from 'react';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db, calcularDesglose } from './firebase';
-import { collection, addDoc, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import {
   Zap,
   Wrench,
@@ -23,6 +19,20 @@ import {
   HardHat,
   Plus,
 } from 'lucide-react';
+import {
+  getSesion,
+  logout,
+  getSolicitudes,
+  crearSolicitud,
+  actualizarSolicitud,
+  getChats,
+  crearChat,
+  actualizarChat,
+  getUsuarios,
+  actualizarUsuario,
+  calcularDesglose
+} from './db';
+import { seedInitialData } from './utils/seed';
 import Login from './pages/Login';
 import MapaUbicacion from './components/MapaUbicacion';
 import SelectorUrgencia from './components/SelectorUrgencia';
@@ -31,6 +41,8 @@ import EstadoServicio from './components/EstadoServicio';
 import BarraUbicacionTecnico from './components/BarraUbicacionTecnico';
 import TabsServicios from './components/TabsServicios';
 import Logo from './components/Logo';
+import BannerVerificacion, { BadgeVerificacion } from './components/BannerVerificacion';
+import VerificacionTecnico from './components/VerificacionTecnico';
 import { calcularDistancia, formatearDistancia } from './utils/distancia';
 import './App.css';
 
@@ -53,23 +65,22 @@ const ESTADOS_FINALIZADOS = ['completado', 'rechazado', 'cancelado'];
 
 function getCategoriaInfo(categoryValue) {
   if (!categoryValue) return { label: 'Servicio', Icon: Wrench };
-
   const found = CATEGORIAS.find(c => c.id === categoryValue);
   if (found) return { label: found.label, Icon: found.Icon };
-
   const fallback = CATEGORIAS.find(c =>
     categoryValue.toLowerCase().includes(c.id.slice(0, 5))
   );
   if (fallback) {
-    return { label: categoryValue.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim() || fallback.label, Icon: fallback.Icon };
+    return { label: categoryValue, Icon: fallback.Icon };
   }
-
   return { label: categoryValue, Icon: Wrench };
 }
 
 function App() {
+  seedInitialData();
+
   const [user, setUser] = useState(null);
-  const [userType, setUserType] = useState(null); // ⭐ Se determina automáticamente
+  const [userType, setUserType] = useState(null);
   const [perfilUsuario, setPerfilUsuario] = useState(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('home');
@@ -88,36 +99,18 @@ function App() {
   const [urgencia, setUrgencia] = useState('normal');
   const [tabActiva, setTabActiva] = useState('pendientes');
   const [ubicacionTecnico, setUbicacionTecnico] = useState(null);
+  const [mostrarVerificacion, setMostrarVerificacion] = useState(false);
 
-  // Cargar usuario + perfil con su tipo
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        try {
-          const userRef = doc(db, 'usuarios', currentUser.uid);
-          const userDoc = await getDoc(userRef);
-          if (userDoc.exists()) {
-            const perfil = userDoc.data();
-            setPerfilUsuario(perfil);
-            setUserType(perfil.tipo);
-          } else {
-            // Sin perfil → asumir cliente por seguridad
-            setUserType('cliente');
-          }
-        } catch (err) {
-          console.error('Error cargando perfil:', err);
-        }
-      } else {
-        setPerfilUsuario(null);
-        setUserType(null);
-      }
-      setLoading(false);
-    });
-    return () => unsub();
+    const sesion = getSesion();
+    if (sesion) {
+      setUser(sesion);
+      setUserType(sesion.tipo);
+      setPerfilUsuario(sesion);
+    }
+    setLoading(false);
   }, []);
 
-  // Cargar datos según el tipo de usuario
   useEffect(() => {
     if (user && userType) {
       if (userType === 'cliente') loadMyRequests();
@@ -135,65 +128,38 @@ function App() {
     setTimeout(() => setNotification(''), 3000);
   };
 
-  const loadMyRequests = async () => {
+  const loadMyRequests = () => {
     if (!user) return;
-    try {
-      const q = query(collection(db, 'requests'), where('userId', '==', user.uid));
-      const querySnapshot = await getDocs(q);
-      const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setRequests(data);
-    } catch (error) {
-      console.error('Error:', error);
-    }
+    const todas = getSolicitudes();
+    const mias = todas.filter(s => s.userId === user.id);
+    setRequests(mias);
   };
 
-  const loadAvailableRequests = async () => {
+  const loadAvailableRequests = () => {
     if (!user) return;
-    try {
-      const q1 = query(
-        collection(db, 'requests'),
-        where('status', 'in', [
-          'pendiente',
-          'negociando',
-          'precio_acordado',
-          'pagado',
-          'en_camino',
-          'llego',
-          'en_proceso',
-          'trabajo_terminado'
-        ])
-      );
-      const snap1 = await getDocs(q1);
-      const activas = snap1.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const todas = getSolicitudes();
 
-      const q2 = query(
-        collection(db, 'requests'),
-        where('tecnicoSeleccionado.uid', '==', user.uid)
-      );
-      const snap2 = await getDocs(q2);
-      const mias = snap2.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const activas = todas.filter(s =>
+      ESTADOS_ACTIVOS.includes(s.status) ||
+      s.status === 'pendiente' ||
+      s.status === 'negociando' ||
+      s.status === 'precio_acordado'
+    );
 
-      const map = new Map();
-      [...activas, ...mias].forEach(sol => map.set(sol.id, sol));
-      setAllRequests(Array.from(map.values()));
-    } catch (error) {
-      console.error('Error:', error);
-    }
+    const mias = todas.filter(s => s.tecnicoSeleccionado?.uid === user.id);
+
+    const unificadas = Array.from(new Map([...activas, ...mias].map(s => [s.id, s])).values());
+    setAllRequests(unificadas);
   };
 
-  const loadChats = async () => {
+  const loadChats = () => {
     if (!user) return;
-    try {
-      const q = query(collection(db, 'chats'), where('participants', 'array-contains', user.email));
-      const querySnapshot = await getDocs(q);
-      const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setChats(data);
-    } catch (error) {
-      console.error('Error loading chats:', error);
-    }
+    const todos = getChats();
+    const mios = todos.filter(c => c.participants?.includes(user.email));
+    setChats(mios);
   };
 
-  const handleCreateRequest = async () => {
+  const handleCreateRequest = () => {
     if (!description || !budget || !selectedCategory) {
       alert('Completa todos los campos');
       return;
@@ -206,10 +172,10 @@ function App() {
     const desglose = calcularDesglose(parseFloat(budget), urgencia);
 
     try {
-      await addDoc(collection(db, 'requests'), {
-        userId: user.uid,
+      crearSolicitud({
+        userId: user.id,
         userEmail: user.email,
-        userName: perfilUsuario?.nombre || user.displayName || '',
+        userName: user.nombre,
         category: selectedCategory,
         description,
         budget: parseFloat(budget),
@@ -220,12 +186,7 @@ function App() {
           direccion: ubicacion.direccion || ''
         },
         desglose,
-        createdAt: new Date(),
-        status: 'pendiente',
-        negotiation: [],
-        timeline: {},
-        offers: [],
-        messages: []
+        status: 'pendiente'
       });
       showNotification('Solicitud creada exitosamente');
       setDescription('');
@@ -240,49 +201,45 @@ function App() {
     }
   };
 
-  const handleMakeOffer = async () => {
+  const handleMakeOffer = () => {
     if (!offerPrice) {
       alert('Ingresa un precio');
       return;
     }
     try {
-      const { doc: docFirestore } = await import('firebase/firestore');
-      const requestRef = docFirestore(db, 'requests', selectedRequest.id);
       const nuevaOferta = {
         id: `msg-${Date.now()}`,
         by: 'tecnico',
-        byUid: user.uid,
+        byUid: user.id,
         byEmail: user.email,
-        byName: perfilUsuario?.nombre || user.displayName || user.email?.split('@')[0],
+        byName: user.nombre,
         type: 'oferta_inicial',
         monto: parseFloat(offerPrice),
         status: 'pendiente',
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       };
 
       const negotiationActual = selectedRequest.negotiation || [];
 
-      await updateDoc(requestRef, {
+      actualizarSolicitud(selectedRequest.id, {
         negotiation: [...negotiationActual, nuevaOferta],
         status: 'negociando',
         tecnicoSeleccionado: {
-          uid: user.uid,
+          uid: user.id,
           email: user.email,
-          nombre: perfilUsuario?.nombre || user.displayName || user.email?.split('@')[0],
+          nombre: user.nombre,
         },
       });
 
-      const chatId = `${selectedRequest.id}-${user.uid}`;
-      await addDoc(collection(db, 'chats'), {
-        chatId,
-        requestId: selectedRequest.id,
+      crearChat({
+        chatId: `${selectedRequest.id}-${user.id}`,
+        solicitudId: selectedRequest.id,
         participants: [selectedRequest.userEmail, user.email],
         messages: [{
           sender: user.email,
           text: `He enviado una oferta por Q${offerPrice}`,
-          timestamp: new Date()
+          timestamp: new Date().toISOString()
         }],
-        createdAt: new Date()
       });
 
       showNotification('Oferta enviada');
@@ -295,17 +252,16 @@ function App() {
     }
   };
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = () => {
     if (!chatMessage.trim() || !selectedChat) return;
     try {
-      const requestRef = doc(db, 'chats', selectedChat.id);
-      const newMessage = {
+      const nuevoMensaje = {
         sender: user.email,
         text: chatMessage,
-        timestamp: new Date()
+        timestamp: new Date().toISOString()
       };
-      await updateDoc(requestRef, {
-        messages: [...(selectedChat.messages || []), newMessage]
+      actualizarChat(selectedChat.id, {
+        messages: [...(selectedChat.messages || []), nuevoMensaje]
       });
       setChatMessage('');
       loadChats();
@@ -314,14 +270,17 @@ function App() {
     }
   };
 
-  const handlePayment = async (requestId) => {
+  const handlePayment = (requestId) => {
     try {
-      const requestRef = doc(db, 'requests', requestId);
       alert('Procesando pago simulado...\n\nPago completado exitosamente!\n\nNo se procesó dinero real (SIMULACIÓN)');
-      await updateDoc(requestRef, {
+      const sol = getSolicitudes().find(s => s.id === requestId);
+      actualizarSolicitud(requestId, {
         status: 'pagado',
-        paymentDate: new Date(),
-        'timeline.pagado': new Date()
+        paymentDate: new Date().toISOString(),
+        timeline: {
+          ...(sol.timeline || {}),
+          pagado: new Date().toISOString()
+        }
       });
       showNotification('Pago registrado');
       loadMyRequests();
@@ -330,10 +289,21 @@ function App() {
     }
   };
 
-  const handleLogout = async () => {
-    await signOut(auth);
+  const handleLogout = () => {
+    logout();
     setView('home');
     setUserType(null);
+    setUser(null);
+  };
+
+  const handleVerificacionCompleta = () => {
+    const usuarios = getUsuarios();
+    const actual = usuarios.find(u => u.id === user.id);
+    if (actual) {
+      setUser({ ...actual });
+      setPerfilUsuario({ ...actual });
+    }
+    showNotification('Verificación enviada. Estamos revisando tu DPI.');
   };
 
   const clasificarSolicitudes = (lista) => {
@@ -344,28 +314,13 @@ function App() {
     };
   };
 
+  // TEMPORAL: sin filtro de distancia para debug
   const procesarSolicitudesTecnico = (lista) => {
-    let procesadas = lista;
-
-    if (ubicacionTecnico) {
-      procesadas = procesadas
-        .map(sol => ({
-          ...sol,
-          distancia: calcularDistancia(ubicacionTecnico, sol.ubicacion)
-        }))
-        .filter(sol => sol.distancia == null || sol.distancia <= RADIO_MAX_KM)
-        .sort((a, b) => {
-          if (a.distancia == null) return 1;
-          if (b.distancia == null) return -1;
-          return a.distancia - b.distancia;
-        });
-    }
-
-    return procesadas;
+    return lista;
   };
 
   if (loading) return <div className="loading">Cargando...</div>;
-  if (!user) return <Login setUserType={setUserType} />;
+  if (!user) return <Login setUserType={setUserType} setUser={setUser} />;
 
   const solicitudesCliente = clasificarSolicitudes(requests);
   const solicitudesTecnico = clasificarSolicitudes(procesarSolicitudesTecnico(allRequests));
@@ -593,6 +548,11 @@ function App() {
       {/* VISTA TÉCNICO */}
       {userType === 'tecnico' && (
         <div className="provider-view">
+          <BannerVerificacion
+            perfil={perfilUsuario}
+            onVerificar={() => setMostrarVerificacion(true)}
+          />
+
           <BarraUbicacionTecnico onUbicacionChange={setUbicacionTecnico} />
 
           <TabsServicios
@@ -601,15 +561,11 @@ function App() {
             contadores={{
               pendientes: solicitudesTecnico.pendientes.filter(r =>
                 (r.negotiation || []).length === 0 ||
-                r.tecnicoSeleccionado?.uid === user.uid ||
-                (r.negotiation || []).some(n => n.byUid === user.uid)
+                r.tecnicoSeleccionado?.uid === user.id ||
+                (r.negotiation || []).some(n => n.byUid === user.id)
               ).length,
-              activos: solicitudesTecnico.activos.filter(r =>
-                r.tecnicoSeleccionado?.uid === user.uid
-              ).length,
-              finalizados: solicitudesTecnico.finalizados.filter(r =>
-                r.tecnicoSeleccionado?.uid === user.uid
-              ).length,
+              activos: solicitudesTecnico.activos.filter(r => r.tecnicoSeleccionado?.uid === user.id).length,
+              finalizados: solicitudesTecnico.finalizados.filter(r => r.tecnicoSeleccionado?.uid === user.id).length,
             }}
           />
 
@@ -647,12 +603,12 @@ function App() {
                 <Zap size={20} strokeWidth={2.5} />
                 <span>Mis Servicios en Curso</span>
               </h2>
-              {solicitudesTecnico.activos.filter(r => r.tecnicoSeleccionado?.uid === user.uid).length === 0 ? (
+              {solicitudesTecnico.activos.filter(r => r.tecnicoSeleccionado?.uid === user.id).length === 0 ? (
                 <p className="tab-vacio">No tienes servicios activos</p>
               ) : (
                 <div className="requests-list">
                   {solicitudesTecnico.activos
-                    .filter(r => r.tecnicoSeleccionado?.uid === user.uid)
+                    .filter(r => r.tecnicoSeleccionado?.uid === user.id)
                     .map(req => (
                       <TarjetaTecnico
                         key={req.id}
@@ -677,12 +633,12 @@ function App() {
                 <CheckCircle2 size={20} strokeWidth={2.5} />
                 <span>Servicios Finalizados</span>
               </h2>
-              {solicitudesTecnico.finalizados.filter(r => r.tecnicoSeleccionado?.uid === user.uid).length === 0 ? (
-                <p className="tab-vacio">Aún no has completado servicios</p>
+              {solicitudesTecnico.finalizados.filter(r => r.tecnicoSeleccionado?.uid === user.id).length === 0 ? (
+                <p className="tab-vacio">No tienes servicios finalizados</p>
               ) : (
                 <div className="requests-list">
                   {solicitudesTecnico.finalizados
-                    .filter(r => r.tecnicoSeleccionado?.uid === user.uid)
+                    .filter(r => r.tecnicoSeleccionado?.uid === user.id)
                     .map(req => (
                       <TarjetaTecnico
                         key={req.id}
@@ -728,6 +684,15 @@ function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {mostrarVerificacion && (
+        <VerificacionTecnico
+          user={user}
+          perfil={perfilUsuario}
+          onClose={() => setMostrarVerificacion(false)}
+          onComplete={handleVerificacionCompleta}
+        />
       )}
     </div>
   );
@@ -826,8 +791,8 @@ function TarjetaCliente({ req, user, chats, onUpdate, onPayment, onOpenChat }) {
 }
 
 function TarjetaTecnico({ req, user, selectedRequest, offerPrice, setSelectedRequest, setOfferPrice, onMakeOffer, onUpdate }) {
-  const soyElTecnicoAsignado = req.tecnicoSeleccionado?.uid === user.uid;
-  const yaHiceOferta = req.negotiation?.some(n => n.byUid === user.uid);
+  const soyElTecnicoAsignado = req.tecnicoSeleccionado?.uid === user.id;
+  const yaHiceOferta = req.negotiation?.some(n => n.byUid === user.id);
   const sinNegociacion = !req.negotiation || req.negotiation.length === 0;
   const catInfo = getCategoriaInfo(req.category);
 
